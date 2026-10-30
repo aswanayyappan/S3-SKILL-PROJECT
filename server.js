@@ -23,18 +23,19 @@ app.use(express.static(path.join(__dirname, 'public')));
 // In-memory telemetry cache
 let telemetryCache = {
   live: {
-    current1: 0,
-    voltage1: 0,
-    current2: 0,
-    voltage2: 0,
+    ledCurrent: 0,
+    ledVoltage: 0,
+    waterPumpCurrent: 0,
+    waterPumpVoltage: 0,
     timestamp: Date.now()
   },
-  statsSummary: {
+  aggregatesSummary: {
     totalSamples: 0,
-    c1: { min: 0, max: 0, avg: 0 },
-    v1: { min: 0, max: 0, avg: 0 },
-    c2: { min: 0, max: 0, avg: 0 },
-    v2: { min: 0, max: 0, avg: 0 },
+    bucketsCount: 0,
+    ledCurrent: { minimum: 0, maximum: 0, average: 0 },
+    ledVoltage: { minimum: 0, maximum: 0, average: 0 },
+    waterPumpCurrent: { minimum: 0, maximum: 0, average: 0 },
+    waterPumpVoltage: { minimum: 0, maximum: 0, average: 0 },
     unitConsumptionKWh: {
       led_kWh: 0,
       pump_kWh: 0,
@@ -45,104 +46,96 @@ let telemetryCache = {
   source: 'initializing'
 };
 
-// Helper: Recursively extract all stat buckets (e.g. from /statistics/hour or /statistics/minute)
-function parseStatistics(statsNode) {
-  let allBuckets = [];
+// Parse /aggregates/minute buckets
+function parseAggregates(minuteAggregates) {
+  if (!minuteAggregates || typeof minuteAggregates !== 'object') return null;
 
-  function traverse(obj) {
-    if (!obj || typeof obj !== 'object') return;
-    if (obj.current1 && (obj.current1.avg !== undefined || obj.samples !== undefined)) {
-      allBuckets.push(obj);
-      return;
-    }
-    for (const key of Object.keys(obj)) {
-      traverse(obj[key]);
-    }
-  }
-
-  traverse(statsNode);
-
-  if (allBuckets.length === 0) return null;
+  const bucketKeys = Object.keys(minuteAggregates);
+  if (bucketKeys.length === 0) return null;
 
   let totalSamples = 0;
-  let sumC1 = 0, sumV1 = 0, sumC2 = 0, sumV2 = 0;
-  let minC1 = Infinity, maxC1 = -Infinity;
-  let minV1 = Infinity, maxV1 = -Infinity;
-  let minC2 = Infinity, maxC2 = -Infinity;
-  let minV2 = Infinity, maxV2 = -Infinity;
+  let sumLedC = 0, sumLedV = 0, sumPumpC = 0, sumPumpV = 0;
+  let minLedC = Infinity, maxLedC = -Infinity;
+  let minLedV = Infinity, maxLedV = -Infinity;
+  let minPumpC = Infinity, maxPumpC = -Infinity;
+  let minPumpV = Infinity, maxPumpV = -Infinity;
 
-  for (const b of allBuckets) {
-    const samples = b.samples || 1;
+  for (const key of bucketKeys) {
+    const b = minuteAggregates[key];
+    if (!b || typeof b !== 'object') continue;
+
+    const samples = b.ledCurrent?.samples || b.waterPumpCurrent?.samples || 1;
     totalSamples += samples;
 
-    // Use absolute current values (sensors record polarity sign depending on clamp orientation)
-    const bAvgC1 = Math.abs(b.current1?.avg ?? 0);
-    const bMaxC1 = Math.max(Math.abs(b.current1?.max ?? 0), Math.abs(b.current1?.min ?? 0));
-    const bMinC1 = Math.min(Math.abs(b.current1?.max ?? 0), Math.abs(b.current1?.min ?? 0));
+    const bAvgLedC = Math.abs(b.ledCurrent?.average ?? 0);
+    const bMaxLedC = Math.abs(b.ledCurrent?.maximum ?? 0);
+    const bMinLedC = Math.abs(b.ledCurrent?.minimum ?? 0);
 
-    const bAvgV1 = b.voltage1?.avg ?? 0;
-    const bMaxV1 = b.voltage1?.max ?? 0;
-    const bMinV1 = b.voltage1?.min ?? 0;
+    const bAvgLedV = b.ledVoltage?.average ?? 0;
+    const bMaxLedV = b.ledVoltage?.maximum ?? 0;
+    const bMinLedV = b.ledVoltage?.minimum ?? 0;
 
-    const bAvgC2 = Math.abs(b.current2?.avg ?? 0);
-    const bMaxC2 = Math.max(Math.abs(b.current2?.max ?? 0), Math.abs(b.current2?.min ?? 0));
-    const bMinC2 = Math.min(Math.abs(b.current2?.max ?? 0), Math.abs(b.current2?.min ?? 0));
+    const bAvgPumpC = Math.abs(b.waterPumpCurrent?.average ?? 0);
+    const bMaxPumpC = Math.abs(b.waterPumpCurrent?.maximum ?? 0);
+    const bMinPumpC = Math.abs(b.waterPumpCurrent?.minimum ?? 0);
 
-    const bAvgV2 = b.voltage2?.avg ?? 0;
-    const bMaxV2 = b.voltage2?.max ?? 0;
-    const bMinV2 = b.voltage2?.min ?? 0;
+    const bAvgPumpV = b.waterPumpVoltage?.average ?? 0;
+    const bMaxPumpV = b.waterPumpVoltage?.maximum ?? 0;
+    const bMinPumpV = b.waterPumpVoltage?.minimum ?? 0;
 
-    sumC1 += bAvgC1 * samples;
-    sumV1 += bAvgV1 * samples;
-    sumC2 += bAvgC2 * samples;
-    sumV2 += bAvgV2 * samples;
+    sumLedC += bAvgLedC * samples;
+    sumLedV += bAvgLedV * samples;
+    sumPumpC += bAvgPumpC * samples;
+    sumPumpV += bAvgPumpV * samples;
 
-    if (bMinC1 < minC1) minC1 = bMinC1;
-    if (bMaxC1 > maxC1) maxC1 = bMaxC1;
-    if (bMinV1 < minV1) minV1 = bMinV1;
-    if (bMaxV1 > maxV1) maxV1 = bMaxV1;
+    if (bMinLedC < minLedC) minLedC = bMinLedC;
+    if (bMaxLedC > maxLedC) maxLedC = bMaxLedC;
+    if (bMinLedV < minLedV) minLedV = bMinLedV;
+    if (bMaxLedV > maxLedV) maxLedV = bMaxLedV;
 
-    if (bMinC2 < minC2) minC2 = bMinC2;
-    if (bMaxC2 > maxC2) maxC2 = bMaxC2;
-    if (bMinV2 < minV2) minV2 = bMinV2;
-    if (bMaxV2 > maxV2) maxV2 = bMaxV2;
+    if (bMinPumpC < minPumpC) minPumpC = bMinPumpC;
+    if (bMaxPumpC > maxPumpC) maxPumpC = bMaxPumpC;
+    if (bMinPumpV < minPumpV) minPumpV = bMinPumpV;
+    if (bMaxPumpV > maxPumpV) maxPumpV = bMaxPumpV;
   }
 
-  const avgC1 = totalSamples > 0 ? sumC1 / totalSamples : 0;
-  const avgV1 = totalSamples > 0 ? sumV1 / totalSamples : 0;
-  const avgC2 = totalSamples > 0 ? sumC2 / totalSamples : 0;
-  const avgV2 = totalSamples > 0 ? sumV2 / totalSamples : 0;
+  const avgLedC = totalSamples > 0 ? sumLedC / totalSamples : 0;
+  const avgLedV = totalSamples > 0 ? sumLedV / totalSamples : 0;
+  const avgPumpC = totalSamples > 0 ? sumPumpC / totalSamples : 0;
+  const avgPumpV = totalSamples > 0 ? sumPumpV / totalSamples : 0;
 
-  // Energy / Unit Consumption Estimation (1 Unit = 1 kWh)
-  // Each sample interval in minute stats is approx 3.3 seconds (18 samples/min = 60s / 18)
-  const totalOperatingHours = (totalSamples * (60 / 18)) / 3600; // estimated hours
-  // LED: V1 * C1 (W) * hours / 1000
-  const ledKWh = ((avgV1 > 1 ? avgV1 : 12) * avgC1 * totalOperatingHours) / 1000;
-  // Water Pump: V2 * C2 (W) * hours / 1000
-  const pumpKWh = ((avgV2 > 50 ? avgV2 : 230) * avgC2 * totalOperatingHours) / 1000;
+  // Energy consumption: each bucket represents 1 minute (60s)
+  const totalMinutes = bucketKeys.length;
+  const hours = totalMinutes / 60;
+
+  // LED (W = V * I) * hours / 1000 => kWh
+  const ledKWh = ((avgLedV > 1 ? avgLedV : 12) * avgLedC * hours) / 1000;
+  // Water Pump (W = V * I) * hours / 1000 => kWh (using 230V reference if sensor divider is 1.18V)
+  const pumpKWh = ((avgPumpV > 50 ? avgPumpV : 230) * avgPumpC * hours) / 1000;
 
   return {
     totalSamples,
-    operatingHours: parseFloat(totalOperatingHours.toFixed(3)),
-    c1: {
-      min: parseFloat((minC1 === Infinity ? 0 : minC1).toFixed(3)),
-      max: parseFloat((maxC1 === -Infinity ? 0 : maxC1).toFixed(3)),
-      avg: parseFloat(avgC1.toFixed(3))
+    bucketsCount: totalMinutes,
+    operatingHours: parseFloat(hours.toFixed(3)),
+    ledCurrent: {
+      minimum: parseFloat((minLedC === Infinity ? 0 : minLedC).toFixed(4)),
+      maximum: parseFloat((maxLedC === -Infinity ? 0 : maxLedC).toFixed(4)),
+      average: parseFloat(avgLedC.toFixed(4))
     },
-    v1: {
-      min: parseFloat((minV1 === Infinity ? 0 : minV1).toFixed(3)),
-      max: parseFloat((maxV1 === -Infinity ? 0 : maxV1).toFixed(3)),
-      avg: parseFloat(avgV1.toFixed(3))
+    ledVoltage: {
+      minimum: parseFloat((minLedV === Infinity ? 0 : minLedV).toFixed(4)),
+      maximum: parseFloat((maxLedV === -Infinity ? 0 : maxLedV).toFixed(4)),
+      average: parseFloat(avgLedV.toFixed(4))
     },
-    c2: {
-      min: parseFloat((minC2 === Infinity ? 0 : minC2).toFixed(3)),
-      max: parseFloat((maxC2 === -Infinity ? 0 : maxC2).toFixed(3)),
-      avg: parseFloat(avgC2.toFixed(3))
+    waterPumpCurrent: {
+      minimum: parseFloat((minPumpC === Infinity ? 0 : minPumpC).toFixed(4)),
+      maximum: parseFloat((maxPumpC === -Infinity ? 0 : maxPumpC).toFixed(4)),
+      average: parseFloat(avgPumpC.toFixed(4))
     },
-    v2: {
-      min: parseFloat((minV2 === Infinity ? 0 : minV2).toFixed(3)),
-      max: parseFloat((maxV2 === -Infinity ? 0 : maxV2).toFixed(3)),
-      avg: parseFloat(avgV2.toFixed(3))
+    waterPumpVoltage: {
+      minimum: parseFloat((minPumpV === Infinity ? 0 : minPumpV).toFixed(4)),
+      maximum: parseFloat((maxPumpV === -Infinity ? 0 : maxPumpV).toFixed(4)),
+      average: parseFloat(avgPumpV.toFixed(4))
     },
     unitConsumptionKWh: {
       led_kWh: parseFloat(ledKWh.toFixed(5)),
@@ -153,16 +146,15 @@ function parseStatistics(statsNode) {
   };
 }
 
-// Fetch both /live and /statistics from Firebase Realtime Database
+// Fetch live and aggregates from Firebase RTDB
 async function fetchFirebaseTelemetry() {
   try {
     let baseUrl = FIREBASE_DB_URL.endsWith('/') ? FIREBASE_DB_URL.slice(0, -1) : FIREBASE_DB_URL;
     const authQuery = FIREBASE_AUTH_SECRET ? `?auth=${encodeURIComponent(FIREBASE_AUTH_SECRET)}` : '';
 
-    // Fetch live node and statistics node in parallel
-    const [liveRes, statsRes] = await Promise.allSettled([
+    const [liveRes, aggRes] = await Promise.allSettled([
       fetch(`${baseUrl}/live.json${authQuery}`, { signal: AbortSignal.timeout(4000) }),
-      fetch(`${baseUrl}/statistics.json${authQuery}`, { signal: AbortSignal.timeout(4000) })
+      fetch(`${baseUrl}/aggregates/minute.json${authQuery}`, { signal: AbortSignal.timeout(4000) })
     ]);
 
     let liveData = null;
@@ -170,50 +162,57 @@ async function fetchFirebaseTelemetry() {
       liveData = await liveRes.value.json();
     }
 
-    let statsData = null;
-    if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
-      statsData = await statsRes.value.json();
+    let aggData = null;
+    if (aggRes.status === 'fulfilled' && aggRes.value.ok) {
+      aggData = await aggRes.value.json();
     }
 
-    // Process live readings
-    const c1 = liveData ? Math.abs(parseFloat(liveData.current1 ?? 0)) : telemetryCache.live.current1;
-    const v1 = liveData ? parseFloat(liveData.voltage1 ?? 0) : telemetryCache.live.voltage1;
-    const c2 = liveData ? Math.abs(parseFloat(liveData.current2 ?? 0)) : telemetryCache.live.current2;
-    const v2 = liveData ? parseFloat(liveData.voltage2 ?? 0) : telemetryCache.live.voltage2;
+    // Process live reading with exact new schema names
+    const ledC = liveData ? Math.abs(parseFloat(liveData.ledCurrent ?? liveData.current1 ?? 0)) : telemetryCache.live.ledCurrent;
+    const ledV = liveData ? parseFloat(liveData.ledVoltage ?? liveData.voltage1 ?? 0) : telemetryCache.live.ledVoltage;
+    const pumpC = liveData ? Math.abs(parseFloat(liveData.waterPumpCurrent ?? liveData.current2 ?? 0)) : telemetryCache.live.waterPumpCurrent;
+    const pumpV = liveData ? parseFloat(liveData.waterPumpVoltage ?? liveData.voltage2 ?? 0) : telemetryCache.live.waterPumpVoltage;
 
-    const ledStatus = c1 > 0.05 ? 'ON' : 'OFF';
-    const pumpStatus = c2 > 0.1 ? 'RUNNING' : 'IDLE';
+    const ledStatus = ledC > 0.05 ? 'ON' : 'OFF';
+    const pumpStatus = pumpC > 0.1 ? 'RUNNING' : 'IDLE';
 
-    // Calculate aggregated statistical metrics (min, max, avg, units/kWh)
-    const statsSummary = parseStatistics(statsData) || telemetryCache.statsSummary;
+    const aggSummary = parseAggregates(aggData) || telemetryCache.aggregatesSummary;
 
     telemetryCache = {
       live: {
-        current1: parseFloat(c1.toFixed(3)),
-        voltage1: parseFloat(v1.toFixed(3)),
-        current2: parseFloat(c2.toFixed(3)),
-        voltage2: parseFloat(v2.toFixed(3)),
+        ledCurrent: parseFloat(ledC.toFixed(4)),
+        ledVoltage: parseFloat(ledV.toFixed(4)),
+        waterPumpCurrent: parseFloat(pumpC.toFixed(4)),
+        waterPumpVoltage: parseFloat(pumpV.toFixed(4)),
         timestamp: liveData?.timestamp || Date.now()
       },
       led: {
         status: ledStatus,
-        current: parseFloat(c1.toFixed(3)),
-        voltage: parseFloat(v1.toFixed(3)),
-        instantPowerWatts: parseFloat((c1 * (v1 > 1 ? v1 : 12)).toFixed(2)),
-        stats: statsSummary.c1,
-        voltageStats: statsSummary.v1,
-        energyKWh: statsSummary.unitConsumptionKWh.led_kWh
+        current: parseFloat(ledC.toFixed(4)),
+        voltage: parseFloat(ledV.toFixed(4)),
+        instantPowerWatts: parseFloat((ledC * (ledV > 1 ? ledV : 12)).toFixed(2)),
+        stats: aggSummary.ledCurrent,
+        voltageStats: aggSummary.ledVoltage,
+        energyKWh: aggSummary.unitConsumptionKWh.led_kWh
       },
       waterPump: {
         status: pumpStatus,
-        current: parseFloat(c2.toFixed(3)),
-        voltage: parseFloat(v2.toFixed(3)),
-        instantPowerWatts: parseFloat((c2 * (v2 > 50 ? v2 : 230)).toFixed(2)),
-        stats: statsSummary.c2,
-        voltageStats: statsSummary.v2,
-        energyKWh: statsSummary.unitConsumptionKWh.pump_kWh
+        current: parseFloat(pumpC.toFixed(4)),
+        voltage: parseFloat(pumpV.toFixed(4)),
+        instantPowerWatts: parseFloat((pumpC * (pumpV > 50 ? pumpV : 230)).toFixed(2)),
+        stats: aggSummary.waterPumpCurrent,
+        voltageStats: aggSummary.waterPumpVoltage,
+        energyKWh: aggSummary.unitConsumptionKWh.pump_kWh
       },
-      statsSummary,
+      aggregatesSummary: aggSummary,
+      statsSummary: {
+        totalSamples: aggSummary.totalSamples,
+        c1: aggSummary.ledCurrent,
+        v1: aggSummary.ledVoltage,
+        c2: aggSummary.waterPumpCurrent,
+        v2: aggSummary.waterPumpVoltage,
+        unitConsumptionKWh: aggSummary.unitConsumptionKWh
+      },
       lastUpdated: new Date().toISOString(),
       source: 'firebase_live'
     };
@@ -226,32 +225,32 @@ async function fetchFirebaseTelemetry() {
   }
 }
 
-// Endpoint: Live Telemetry & Statistical Analysis
+// Endpoint: Live Telemetry
 app.get('/api/telemetry', async (req, res) => {
   const data = await fetchFirebaseTelemetry();
   res.json({
     success: true,
     data,
     meta: {
-      led: "Current 1 (LED lighting fixture)",
-      waterPump: "Current 2 & Voltage 2 (Water Pump motor)",
-      unitsDefinition: "1 Electricity Unit = 1 kWh"
+      led: "ledCurrent & ledVoltage (LED fixture)",
+      waterPump: "waterPumpCurrent & waterPumpVoltage (Water pump motor)",
+      aggregates: "/aggregates/minute buckets"
     }
   });
 });
 
-// Endpoint: Simulator / Override
+// Endpoint: Simulation
 app.post('/api/telemetry/simulate', (req, res) => {
   const { current_one, current_two, voltage_two, voltage_one } = req.body;
-  if (current_one !== undefined) telemetryCache.live.current1 = Math.abs(parseFloat(current_one));
-  if (voltage_one !== undefined) telemetryCache.live.voltage1 = parseFloat(voltage_one);
-  if (current_two !== undefined) telemetryCache.live.current2 = Math.abs(parseFloat(current_two));
-  if (voltage_two !== undefined) telemetryCache.live.voltage2 = parseFloat(voltage_two);
+  if (current_one !== undefined) telemetryCache.live.ledCurrent = Math.abs(parseFloat(current_one));
+  if (voltage_one !== undefined) telemetryCache.live.ledVoltage = parseFloat(voltage_one);
+  if (current_two !== undefined) telemetryCache.live.waterPumpCurrent = Math.abs(parseFloat(current_two));
+  if (voltage_two !== undefined) telemetryCache.live.waterPumpVoltage = parseFloat(voltage_two);
 
-  const c1 = telemetryCache.live.current1;
-  const v1 = telemetryCache.live.voltage1;
-  const c2 = telemetryCache.live.current2;
-  const v2 = telemetryCache.live.voltage2;
+  const c1 = telemetryCache.live.ledCurrent;
+  const v1 = telemetryCache.live.ledVoltage;
+  const c2 = telemetryCache.live.waterPumpCurrent;
+  const v2 = telemetryCache.live.waterPumpVoltage;
 
   telemetryCache.led = {
     ...telemetryCache.led,
@@ -275,59 +274,69 @@ app.post('/api/telemetry/simulate', (req, res) => {
   res.json({ success: true, data: telemetryCache });
 });
 
-// Endpoint: Chat with Groq AI with Statistical & Unit Consumption Context
+// Endpoint: Groq AI Chat
 app.post('/api/chat', async (req, res) => {
   const { message, history } = req.body;
   if (!message) {
     return res.status(400).json({ error: 'Message is required' });
   }
 
-  // Always fetch fresh telemetry and statistical trends
   const telemetry = await fetchFirebaseTelemetry();
-  const stats = telemetry.statsSummary;
+  const agg = telemetry.aggregatesSummary;
 
   const systemPrompt = `You are "AuraIoT", an expert Industrial IoT Telemetry Engineer & Electrical Energy Analyst.
 You monitor live IoT hardware connected via Firebase Realtime Database (https://s3-skills-default-rtdb.firebaseio.com/).
 
-DEVICE TELEMETRY & STATISTICAL METRICS:
+DATABASE TELEMETRY ARCHITECTURE & EXACT FIELD NAMES:
+- /live:
+  * ledCurrent, ledVoltage (for LED Fixture)
+  * waterPumpCurrent, waterPumpVoltage (for Water Pump Motor)
+- /aggregates/minute:
+  * Minute buckets (e.g. 29889773, 29889786...) storing minimum, maximum, average, and samples for:
+    - ledCurrent
+    - ledVoltage
+    - waterPumpCurrent
+    - waterPumpVoltage
 
-1. LED FIXTURE (Monitored via Current 1 / current1):
-   - Current Instant: ${telemetry.live.current1} A | Status: ${telemetry.led?.status}
-   - Instantaneous Power: ${telemetry.led?.instantPowerWatts} W
-   - STATISTICAL ANALYSIS (from historical data buckets, ${stats.totalSamples} total recorded samples):
-     * Current Max Peak: ${stats.c1.max} A
-     * Current Min: ${stats.c1.min} A
-     * Current Average: ${stats.c1.avg} A
-     * Voltage Max: ${stats.v1.max} V | Min: ${stats.v1.min} V | Avg: ${stats.v1.avg} V
-   - Cumulative Unit Consumption: ${stats.unitConsumptionKWh.led_kWh} kWh (Units)
+CURRENT LIVE TELEMETRY:
+1. LED FIXTURE:
+   - Instant Current (ledCurrent): ${telemetry.live.ledCurrent} A | Status: ${telemetry.led?.status}
+   - Instant Voltage (ledVoltage): ${telemetry.live.ledVoltage} V
+   - Instant Power: ${telemetry.led?.instantPowerWatts} W
+   - AGGREGATE STATS (over ${agg.bucketsCount} minute buckets, ${agg.totalSamples} samples):
+     * Maximum Peak Current: ${agg.ledCurrent.maximum} A
+     * Minimum Current: ${agg.ledCurrent.minimum} A
+     * Average Current: ${agg.ledCurrent.average} A
+     * Voltage Max: ${agg.ledVoltage.maximum} V | Min: ${agg.ledVoltage.minimum} V | Avg: ${agg.ledVoltage.average} V
+   - Cumulative Unit Consumption: ${agg.unitConsumptionKWh.led_kWh} kWh (Units)
 
-2. WATER PUMP MOTOR (Monitored via Current 2 / current2 & Voltage 2 / voltage2):
-   - Current Instant: ${telemetry.live.current2} A | Status: ${telemetry.waterPump?.status}
-   - Voltage Instant: ${telemetry.live.voltage2} V
-   - Instantaneous Power: ${telemetry.waterPump?.instantPowerWatts} W
-   - STATISTICAL ANALYSIS (from historical data buckets, ${stats.totalSamples} total recorded samples):
-     * Current Max Peak: ${stats.c2.max} A
-     * Current Min: ${stats.c2.min} A
-     * Current Average: ${stats.c2.avg} A
-     * Voltage Max: ${stats.v2.max} V | Min: ${stats.v2.min} V | Avg: ${stats.v2.avg} V
-   - Cumulative Unit Consumption: ${stats.unitConsumptionKWh.pump_kWh} kWh (Units)
+2. WATER PUMP MOTOR:
+   - Instant Current (waterPumpCurrent): ${telemetry.live.waterPumpCurrent} A | Status: ${telemetry.waterPump?.status}
+   - Instant Voltage (waterPumpVoltage): ${telemetry.live.waterPumpVoltage} V
+   - Instant Power: ${telemetry.waterPump?.instantPowerWatts} W
+   - AGGREGATE STATS (over ${agg.bucketsCount} minute buckets, ${agg.totalSamples} samples):
+     * Maximum Peak Current: ${agg.waterPumpCurrent.maximum} A
+     * Minimum Current: ${agg.waterPumpCurrent.minimum} A
+     * Average Current: ${agg.waterPumpCurrent.average} A
+     * Voltage Max: ${agg.waterPumpVoltage.maximum} V | Min: ${agg.waterPumpVoltage.minimum} V | Avg: ${agg.waterPumpVoltage.average} V
+   - Cumulative Unit Consumption: ${agg.unitConsumptionKWh.pump_kWh} kWh (Units)
 
-3. OVERALL ENERGY CONSUMPTION SUMMARY:
-   - Total Monitoring Duration: ~${stats.operatingHours} hours (${stats.totalSamples} samples)
-   - Total Energy Consumption: ${stats.unitConsumptionKWh.total_kWh} kWh (${stats.unitConsumptionKWh.estimatedUnits} Electricity Units)
-   - Last Telemetry Sync: ${telemetry.lastUpdated}
+3. TOTAL FACILITY ENERGY:
+   - Total Monitored Time: ~${agg.operatingHours} hours (${agg.bucketsCount} minute buckets)
+   - Total Units Consumed: ${agg.unitConsumptionKWh.total_kWh} kWh (${agg.unitConsumptionKWh.estimatedUnits} Units)
+   - Last Sync: ${telemetry.lastUpdated}
 
-ROLE & RESPONSE DIRECTIVES:
-- Emphasize STATISTICAL VALUES whenever asked: always cite Max, Min, Average, and Peak loads.
-- Highlight UNIT CONSUMPTION (kWh / Units) and estimate operating cost if requested (e.g., assuming typical grid rate like $0.12 or ₹8 per unit).
-- Point out anomalies: note if voltage surges (Max voltage) or current surges (Peak current) indicate motor inrush, dry-run, or circuit overload.
-- Keep output cleanly structured with markdown tables or bulleted highlights.`;
+ROLE & DIRECTIVES:
+- Emphasize STATISTICAL VALUES (Maximum, Minimum, Average, Samples) from the minute aggregates.
+- Highlight UNIT CONSUMPTION (kWh / Units) and estimate cost if asked.
+- Reference the exact field names (ledCurrent, waterPumpCurrent, ledVoltage, waterPumpVoltage) when explaining metrics.
+- Keep output clean, professional, and formatted in markdown.`;
 
   const clientApiKey = req.headers['x-groq-key'] || process.env.GROQ_API_KEY;
 
   if (!clientApiKey) {
     return res.status(200).json({
-      reply: `⚠️ **Groq API Key Required**\n\n**Statistical Snapshot:**\n- **LED Current (1):** Instant: \`${telemetry.live.current1} A\`, Max: \`${stats.c1.max} A\`, Avg: \`${stats.c1.avg} A\`, Energy: \`${stats.unitConsumptionKWh.led_kWh} kWh\`\n- **Pump Current (2):** Instant: \`${telemetry.live.current2} A\`, Max: \`${stats.c2.max} A\`, Avg: \`${stats.c2.avg} A\`\n- **Total Units Consumed:** \`${stats.unitConsumptionKWh.total_kWh} kWh\`\n\nAdd your \`GROQ_API_KEY\` to chat with the AI.`
+      reply: `⚠️ **Groq API Key Required**\n\n**Live Telemetry Status:**\n- **LED (ledCurrent):** \`${telemetry.live.ledCurrent} A\` (Max: \`${agg.ledCurrent.maximum} A\`, Avg: \`${agg.ledCurrent.average} A\`)\n- **Water Pump (waterPumpCurrent):** \`${telemetry.live.waterPumpCurrent} A\` (Max: \`${agg.waterPumpCurrent.maximum} A\`, Avg: \`${agg.waterPumpCurrent.average} A\`)\n- **Total Units Consumed:** \`${agg.unitConsumptionKWh.total_kWh} kWh\`\n\nPlease add your \`GROQ_API_KEY\` in your Render or local environment.`
     });
   }
 
@@ -365,8 +374,8 @@ app.listen(PORT, () => {
   console.log(`===============================================`);
   console.log(`🚀 IoT & Groq Server running at: http://localhost:${PORT}`);
   console.log(`📡 Connected to Firebase: ${FIREBASE_DB_URL}`);
-  console.log(`📊 Reading /live and /statistics nodes`);
-  console.log(`💡 Current 1 = LED Fixture`);
-  console.log(`🚰 Current 2 & Voltage 2 = Water Pump`);
+  console.log(`📊 Reading /live and /aggregates/minute`);
+  console.log(`💡 ledCurrent & ledVoltage = LED Fixture`);
+  console.log(`🚰 waterPumpCurrent & waterPumpVoltage = Water Pump`);
   console.log(`===============================================`);
 });

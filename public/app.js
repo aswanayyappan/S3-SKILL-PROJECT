@@ -65,15 +65,15 @@ async function fetchTelemetry() {
 // Update Dashboard UI with latest sensor numbers
 function updateUI(data) {
   const live = data.live || {};
-  const c1 = parseFloat(live.current1 ?? data.led?.current ?? 0);
-  const c2 = parseFloat(live.current2 ?? data.waterPump?.current ?? 0);
-  const v1 = parseFloat(live.voltage1 ?? data.led?.voltage ?? 0);
-  const v2 = parseFloat(live.voltage2 ?? data.waterPump?.voltage ?? 0);
+  const c1 = parseFloat(live.ledCurrent ?? live.current1 ?? data.led?.current ?? 0);
+  const c2 = parseFloat(live.waterPumpCurrent ?? live.current2 ?? data.waterPump?.current ?? 0);
+  const v1 = parseFloat(live.ledVoltage ?? live.voltage1 ?? data.led?.voltage ?? 0);
+  const v2 = parseFloat(live.waterPumpVoltage ?? live.voltage2 ?? data.waterPump?.voltage ?? 0);
 
   const pLed = data.led?.instantPowerWatts ?? (c1 * (v1 > 1 ? v1 : 12));
   const pPump = data.waterPump?.instantPowerWatts ?? (c2 * (v2 > 50 ? v2 : 230));
 
-  // LED Updates (Current 1)
+  // LED Updates (ledCurrent)
   ledCurrentVal.textContent = c1.toFixed(3);
   ledPowerVal.textContent = pLed.toFixed(2);
   const isLedOn = data.led?.status === 'ON' || c1 > 0.05;
@@ -85,34 +85,37 @@ function updateUI(data) {
   ledCurrentMeter.style.width = `${ledPercent}%`;
 
   // LED Statistics & Units
-  if (data.led?.stats) {
-    if (ledMaxVal) ledMaxVal.textContent = `${data.led.stats.max} A`;
-    if (ledAvgVal) ledAvgVal.textContent = `${data.led.stats.avg} A`;
-    if (ledKwhVal) ledKwhVal.textContent = `${data.led.energyKWh} kWh`;
+  const ledStats = data.led?.stats || data.aggregatesSummary?.ledCurrent;
+  if (ledStats) {
+    if (ledMaxVal) ledMaxVal.textContent = `${ledStats.maximum ?? ledStats.max} A`;
+    if (ledAvgVal) ledAvgVal.textContent = `${ledStats.average ?? ledStats.avg} A`;
+    if (ledKwhVal) ledKwhVal.textContent = `${data.led?.energyKWh ?? data.aggregatesSummary?.unitConsumptionKWh?.led_kWh ?? 0} kWh`;
   }
 
-  // Water Pump Updates (Current 2 & Voltage 2)
-  pumpVoltageVal.textContent = v2.toFixed(1);
+  // Water Pump Updates (waterPumpCurrent & waterPumpVoltage)
+  pumpVoltageVal.textContent = v2.toFixed(2);
   pumpCurrentVal.textContent = c2.toFixed(3);
   pumpPowerVal.textContent = pPump.toFixed(1);
   const isPumpActive = data.waterPump?.status === 'RUNNING' || c2 > 0.1;
   pumpStatusBadge.textContent = isPumpActive ? 'ACTIVE' : 'IDLE';
   pumpStatusBadge.className = `status-pill ${isPumpActive ? 'status-active' : 'status-idle'}`;
 
-  // Pump meter: 0 to 10A scale
+  // Pump meter: 0 to 1A scale
   const pumpPercent = Math.min(Math.max((c2 / 1.0) * 100, 0), 100);
   pumpCurrentMeter.style.width = `${pumpPercent}%`;
 
   // Pump Statistics & Units
-  if (data.waterPump?.stats) {
-    if (pumpMaxVal) pumpMaxVal.textContent = `${data.waterPump.stats.max} A`;
-    if (pumpMaxVoltVal) pumpMaxVoltVal.textContent = `${data.waterPump.voltageStats?.max ?? v2} V`;
-    if (pumpKwhVal) pumpKwhVal.textContent = `${data.waterPump.energyKWh} kWh`;
+  const pumpStats = data.waterPump?.stats || data.aggregatesSummary?.waterPumpCurrent;
+  const pumpVoltStats = data.waterPump?.voltageStats || data.aggregatesSummary?.waterPumpVoltage;
+  if (pumpStats) {
+    if (pumpMaxVal) pumpMaxVal.textContent = `${pumpStats.maximum ?? pumpStats.max} A`;
+    if (pumpMaxVoltVal) pumpMaxVoltVal.textContent = `${pumpVoltStats?.maximum ?? pumpVoltStats?.max ?? v2} V`;
+    if (pumpKwhVal) pumpKwhVal.textContent = `${data.waterPump?.energyKWh ?? data.aggregatesSummary?.unitConsumptionKWh?.pump_kWh ?? 0} kWh`;
   }
 
   // Timestamp & Total Unit Stats
   const date = data.lastUpdated ? new Date(data.lastUpdated) : new Date();
-  const totalUnits = data.statsSummary?.unitConsumptionKWh?.total_kWh ?? '--';
+  const totalUnits = data.aggregatesSummary?.unitConsumptionKWh?.total_kWh ?? data.statsSummary?.unitConsumptionKWh?.total_kWh ?? '--';
   lastUpdated.textContent = `Sync: ${date.toLocaleTimeString()} | Total Units: ${totalUnits} kWh`;
 }
 
