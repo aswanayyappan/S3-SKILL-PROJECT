@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: iot-groq-dashboard
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: FIREBASE_DB_URL
+        value: https://s3-skills-default-rtdb.firebaseio.com/
+      - key: GROQ_API_KEY
+        sync: false
