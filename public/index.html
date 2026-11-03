@@ -153,18 +153,18 @@
             </div>
           </div>
 
-          <!-- CARD 2: Water Pump Telemetry -->
+          <!-- CARD 2: DC Motor Telemetry -->
           <div class="card device-card pump-card" id="pumpCard">
             <div class="card-header">
               <div class="card-icon pump-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
-                  <path d="M12 9v4m-2 0h4"/>
+                  <circle cx="12" cy="12" r="9"/>
+                  <path d="M12 7v10M9 9l6 6"/>
                 </svg>
               </div>
               <div class="card-title-group">
-                <h3>Water Pump Motor</h3>
-                <span class="device-tag">Field: <code>waterPumpCurrent</code> &bull; <code>waterPumpVoltage</code></span>
+                <h3>5V DC Motor</h3>
+                <span class="device-tag">Field: <code>waterPumpCurrent</code> / <code>motorCurrent</code> &bull; ACS712 5A</span>
               </div>
               <span id="pumpStatusBadge" class="status-pill status-idle">IDLE</span>
             </div>
@@ -179,7 +179,7 @@
               </div>
 
               <div class="metric-block">
-                <span class="metric-label">VOLTAGE (V)</span>
+                <span class="metric-label">MOTOR VOLTAGE (V)</span>
                 <div class="metric-value-wrap">
                   <span id="pumpVoltageVal" class="metric-val">0.00</span>
                   <span class="metric-unit">V</span>
@@ -187,9 +187,9 @@
               </div>
 
               <div class="metric-block">
-                <span class="metric-label">ACTIVE LOAD</span>
+                <span class="metric-label">MOTOR POWER</span>
                 <div class="metric-value-wrap">
-                  <span id="pumpPowerVal" class="metric-val">0</span>
+                  <span id="pumpPowerVal" class="metric-val">0.000</span>
                   <span class="metric-unit">W</span>
                 </div>
               </div>
@@ -200,11 +200,11 @@
             </div>
             <div class="meter-legend">
               <span>0.0 A</span>
-              <span>Normal Operation</span>
-              <span>1.0 A</span>
+              <span>Normal Running (0.1–1.2A)</span>
+              <span>5.0 A Max</span>
             </div>
 
-            <!-- Statistical Breakdown for Pump -->
+            <!-- Statistical Breakdown for Motor -->
             <div class="stats-row">
               <div class="stat-pill"><span>Max Peak:</span> <strong id="pumpMaxVal">-- A</strong></div>
               <div class="stat-pill"><span>Avg:</span> <strong id="pumpAvgVal">-- A</strong></div>
@@ -227,12 +227,12 @@
               <input type="number" id="simC1" step="0.05" value="0.45" min="0" max="5">
             </div>
             <div class="sim-input-group">
-              <label>Pump Current (A)</label>
-              <input type="number" id="simC2" step="0.05" value="0.25" min="0" max="25">
+              <label>Motor Current (A)</label>
+              <input type="number" id="simC2" step="0.05" value="0.25" min="0" max="5">
             </div>
             <div class="sim-input-group">
-              <label>Pump Voltage (V)</label>
-              <input type="number" id="simV2" step="0.5" value="1.18" min="0" max="300">
+              <label>Motor Voltage (V)</label>
+              <input type="number" id="simV2" step="0.1" value="5.0" min="0" max="30">
             </div>
             <button id="applySimBtn" class="btn btn-primary">Apply Update</button>
           </div>
@@ -240,9 +240,10 @@
           <div class="preset-buttons">
             <span>Prototype Test Scenarios:</span>
             <button class="preset-btn" data-c1="0.0" data-c2="0.0" data-v2="1.18">Standby / All OFF</button>
-            <button class="preset-btn" data-c1="0.38" data-c2="0.18" data-v2="1.18">Normal Running</button>
-            <button class="preset-btn" data-c1="0.95" data-c2="4.8" data-v2="228">Heavy Industrial Load</button>
-            <button class="preset-btn" data-c1="0.4" data-c2="8.5" data-v2="190">Pump Overload Alert</button>
+            <button class="preset-btn" data-c1="0.39" data-c2="0.18" data-v2="1.18">Current Bench Data</button>
+            <button class="preset-btn" data-c1="0.39" data-c2="0.85" data-v2="5.0">Normal 5V Motor Run</button>
+            <button class="preset-btn" data-c1="0.39" data-c2="1.8" data-v2="5.0">Startup Surge (1.8A)</button>
+            <button class="preset-btn" data-c1="0.39" data-c2="3.2" data-v2="4.8">Motor Stall / Overload (3.2A)</button>
           </div>
         </div>
       </section>
@@ -285,10 +286,10 @@
 
         <!-- Suggested Prompt Chips -->
         <div class="prompt-chips">
-          <button class="chip" data-prompt="Verify the exact DC power calculations (P = V * I) for the LED and Water Pump.">⚡ Verify Power (P=V*I)</button>
-          <button class="chip" data-prompt="Explain the difference between Historical Average Projection and Current Load Projection.">📅 Monthly Projections</button>
-          <button class="chip" data-prompt="Give me a complete energy charge breakdown for both devices at ₹8/unit.">💰 Energy Charges Breakdown</button>
-          <button class="chip" data-prompt="Are the ACS712 current readings within the valid operating range?">🔍 Sensor Calibration Check</button>
+          <button class="chip" data-prompt="Verify exact DC motor and LED power calculations (P = V * I) with formulas.">⚡ DC Motor & LED Power</button>
+          <button class="chip" data-prompt="How does the system distinguish normal motor running from startup surge and motor stall?">⚙️ Motor State Logic</button>
+          <button class="chip" data-prompt="Is the reported 1.18V motor voltage normal for a 5V DC motor? Give calibration steps.">🔍 5V Motor Voltage Check</button>
+          <button class="chip" data-prompt="Show energy charges in ₹ for both devices and monthly projections.">💰 Energy & Cost in ₹</button>
         </div>
 
         <!-- Chat Input Form -->

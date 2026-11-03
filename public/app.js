@@ -78,22 +78,22 @@ async function fetchTelemetry() {
 function updateUI(data) {
   const live = data.live || {};
   const led = data.led || {};
-  const pump = data.waterPump || {};
+  const motor = data.dcMotor || data.waterPump || {};
   const overview = data.systemOverview || {};
   const proj = overview.projections || {};
 
   const c1 = Number(live.ledCurrent ?? led.current ?? 0);
   const v1 = Number(live.ledVoltage ?? led.voltage ?? 0);
-  const c2 = Number(live.waterPumpCurrent ?? pump.current ?? 0);
-  const v2 = Number(live.waterPumpVoltage ?? pump.voltage ?? 0);
+  const c2 = Number(live.motorCurrent ?? live.waterPumpCurrent ?? motor.current ?? 0);
+  const v2 = Number(live.motorVoltage ?? live.waterPumpVoltage ?? motor.voltage ?? 0);
 
   // Exact DC Power: P = V * I
   const pLed = led.instantPowerWatts ?? (v1 * c1);
-  const pPump = pump.instantPowerWatts ?? (v2 * c2);
-  const pTotal = overview.totalPowerWatts ?? (pLed + pPump);
+  const pMotor = motor.instantPowerWatts ?? (v2 * c2);
+  const pTotal = overview.totalPowerWatts ?? (pLed + pMotor);
 
   // Executive KPI Strip
-  if (kpiTotalPower) kpiTotalPower.textContent = pTotal.toFixed(2);
+  if (kpiTotalPower) kpiTotalPower.textContent = pTotal.toFixed(3);
   if (kpiTotalUnits) kpiTotalUnits.textContent = (overview.cumulativeUnitsKwh ?? 0).toFixed(4);
   if (kpiTotalCostINR) kpiTotalCostINR.textContent = `₹${(overview.energyChargeINR ?? 0).toFixed(2)}`;
 
@@ -124,25 +124,35 @@ function updateUI(data) {
     if (ledCostINRVal) ledCostINRVal.textContent = `₹${Number(led.energyChargeINR ?? 0).toFixed(2)}`;
   }
 
-  // Water Pump Updates (waterPumpCurrent & waterPumpVoltage)
+  // 5V DC Motor Updates
   pumpVoltageVal.textContent = v2.toFixed(2);
   pumpCurrentVal.textContent = c2.toFixed(3);
-  pumpPowerVal.textContent = pPump.toFixed(3);
-  const isPumpActive = pump.status === 'RUNNING' || c2 > 0.05;
-  pumpStatusBadge.textContent = isPumpActive ? 'ACTIVE' : 'IDLE';
-  pumpStatusBadge.className = `status-pill ${isPumpActive ? 'status-active' : 'status-idle'}`;
+  pumpPowerVal.textContent = pMotor.toFixed(3);
+  
+  // Motor status styling
+  const motorStatus = motor.status || 'OFF';
+  pumpStatusBadge.textContent = motorStatus;
+  if (motorStatus === 'NORMAL RUNNING') {
+    pumpStatusBadge.className = 'status-pill status-active';
+  } else if (motorStatus === 'STARTUP / HIGH LOAD') {
+    pumpStatusBadge.className = 'status-pill status-idle';
+  } else if (motorStatus === 'STALL / OVERLOAD') {
+    pumpStatusBadge.className = 'status-pill status-off';
+  } else {
+    pumpStatusBadge.className = 'status-pill status-off';
+  }
 
-  // Pump meter: 0 to 1A scale
-  const pumpPercent = Math.min(Math.max((c2 / 1.0) * 100, 0), 100);
-  pumpCurrentMeter.style.width = `${pumpPercent}%`;
+  // Motor meter: 0 to 5A scale (ACS712 5A)
+  const motorPercent = Math.min(Math.max((c2 / 5.0) * 100, 0), 100);
+  pumpCurrentMeter.style.width = `${motorPercent}%`;
 
-  // Pump Statistical Aggregates & Cost
-  const pumpStats = pump.stats || {};
-  if (pumpStats) {
-    if (pumpMaxVal) pumpMaxVal.textContent = `${Number(pumpStats.maximum ?? 0).toFixed(3)} A`;
-    if (pumpAvgVal) pumpAvgVal.textContent = `${Number(pumpStats.average ?? 0).toFixed(3)} A`;
-    if (pumpMinVal) pumpMinVal.textContent = `${Number(pumpStats.minimum ?? 0).toFixed(3)} A`;
-    if (pumpCostINRVal) pumpCostINRVal.textContent = `₹${Number(pump.energyChargeINR ?? 0).toFixed(2)}`;
+  // DC Motor Statistical Aggregates & Cost
+  const motorStats = motor.stats || {};
+  if (motorStats) {
+    if (pumpMaxVal) pumpMaxVal.textContent = `${Number(motorStats.maximum ?? 0).toFixed(3)} A`;
+    if (pumpAvgVal) pumpAvgVal.textContent = `${Number(motorStats.average ?? 0).toFixed(3)} A`;
+    if (pumpMinVal) pumpMinVal.textContent = `${Number(motorStats.minimum ?? 0).toFixed(3)} A`;
+    if (pumpCostINRVal) pumpCostINRVal.textContent = `₹${Number(motor.energyChargeINR ?? 0).toFixed(2)}`;
   }
 
   // Timestamp & Status

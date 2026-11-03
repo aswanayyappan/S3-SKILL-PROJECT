@@ -16,10 +16,10 @@ const PORT = process.env.PORT || 3000;
 const FIREBASE_DB_URL = process.env.FIREBASE_DB_URL || 'https://s3-skills-default-rtdb.firebaseio.com/';
 const FIREBASE_AUTH_SECRET = process.env.FIREBASE_AUTH_SECRET || '';
 
-// Indian Electricity Tariff Standard rate (₹8.00 per unit for illustrative energy charge)
+// Tariff rate: ₹8.00 per unit (1 Unit = 1 kWh)
 const TARIFF_RATE_PER_UNIT = 8.00;
 
-// Maximum physically valid DC current threshold for ACS712-5A (reject noise spikes like 25-27A)
+// Maximum physically valid DC current threshold for ACS712-5A (reject noise spikes > 6A)
 const MAX_VALID_DC_CURRENT = 6.0; // Amperes
 const MIN_VALID_VOLTAGE = 0.0;
 const MAX_VALID_VOLTAGE = 35.0; // Low-voltage DC bench testing
@@ -39,10 +39,10 @@ function loadAccumulatorState() {
       const data = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
       return {
         accumulatedLedKwh: Number(data.accumulatedLedKwh) || 0,
-        accumulatedPumpKwh: Number(data.accumulatedPumpKwh) || 0,
+        accumulatedMotorKwh: Number(data.accumulatedMotorKwh ?? data.accumulatedPumpKwh) || 0,
         lastTimestampMs: Number(data.lastTimestampMs) || 0,
         lastLedPowerW: Number(data.lastLedPowerW) || 0,
-        lastPumpPowerW: Number(data.lastPumpPowerW) || 0,
+        lastMotorPowerW: Number(data.lastMotorPowerW ?? data.lastPumpPowerW) || 0,
         firstTimestampMs: Number(data.firstTimestampMs) || 0
       };
     }
@@ -51,10 +51,10 @@ function loadAccumulatorState() {
   }
   return {
     accumulatedLedKwh: 0,
-    accumulatedPumpKwh: 0,
+    accumulatedMotorKwh: 0,
     lastTimestampMs: 0,
     lastLedPowerW: 0,
-    lastPumpPowerW: 0,
+    lastMotorPowerW: 0,
     firstTimestampMs: 0
   };
 }
@@ -84,8 +84,8 @@ let telemetryCache = {
   live: {
     ledCurrent: 0,
     ledVoltage: 0,
-    waterPumpCurrent: 0,
-    waterPumpVoltage: 0,
+    motorCurrent: 0,
+    motorVoltage: 0,
     timestamp: Date.now()
   },
   aggregatesSummary: {
@@ -93,16 +93,14 @@ let telemetryCache = {
     bucketsCount: 0,
     ledCurrent: { minimum: 0, maximum: 0, average: 0 },
     ledVoltage: { minimum: 0, maximum: 0, average: 0 },
-    waterPumpCurrent: { minimum: 0, maximum: 0, average: 0 },
-    waterPumpVoltage: { minimum: 0, maximum: 0, average: 0 }
+    motorCurrent: { minimum: 0, maximum: 0, average: 0 },
+    motorVoltage: { minimum: 0, maximum: 0, average: 0 }
   },
   lastUpdated: new Date().toISOString(),
   source: 'initializing'
 };
 
-// ========================================================
-// PARSE HISTORICAL MINUTE AGGREGATES & REJECT SENSOR SPIKES
-// ========================================================
+// Parse historical minute aggregates & reject sensor spikes
 function parseAggregates(minuteAggregates) {
   if (!minuteAggregates || typeof minuteAggregates !== 'object') return null;
 
@@ -110,18 +108,18 @@ function parseAggregates(minuteAggregates) {
   if (bucketKeys.length === 0) return null;
 
   let totalSamples = 0;
-  let sumLedC = 0, sumLedV = 0, sumPumpC = 0, sumPumpV = 0;
-  let validLedSamples = 0, validPumpSamples = 0;
+  let sumLedC = 0, sumLedV = 0, sumMotorC = 0, sumMotorV = 0;
+  let validLedSamples = 0, validMotorSamples = 0;
   let minLedC = Infinity, maxLedC = -Infinity;
   let minLedV = Infinity, maxLedV = -Infinity;
-  let minPumpC = Infinity, maxPumpC = -Infinity;
-  let minPumpV = Infinity, maxPumpV = -Infinity;
+  let minMotorC = Infinity, maxMotorC = -Infinity;
+  let minMotorV = Infinity, maxMotorV = -Infinity;
 
   for (const key of bucketKeys) {
     const b = minuteAggregates[key];
     if (!b || typeof b !== 'object') continue;
 
-    const samples = b.ledCurrent?.samples || b.waterPumpCurrent?.samples || 1;
+    const samples = b.ledCurrent?.samples || b.waterPumpCurrent?.samples || b.motorCurrent?.samples || 1;
     totalSamples += samples;
 
     const bAvgLedC = Math.abs(b.ledCurrent?.average ?? 0);
@@ -132,13 +130,17 @@ function parseAggregates(minuteAggregates) {
     const bMaxLedV = Math.abs(b.ledVoltage?.maximum ?? 0);
     const bMinLedV = Math.abs(b.ledVoltage?.minimum ?? 0);
 
-    const bAvgPumpC = Math.abs(b.waterPumpCurrent?.average ?? 0);
-    const bMaxPumpC = Math.abs(b.waterPumpCurrent?.maximum ?? 0);
-    const bMinPumpC = Math.abs(b.waterPumpCurrent?.minimum ?? 0);
+    // Backward-compatible reading of motorCurrent or legacy waterPumpCurrent
+    const motorObj = b.motorCurrent || b.waterPumpCurrent || {};
+    const motorVObj = b.motorVoltage || b.waterPumpVoltage || {};
 
-    const bAvgPumpV = Math.abs(b.waterPumpVoltage?.average ?? 0);
-    const bMaxPumpV = Math.abs(b.waterPumpVoltage?.maximum ?? 0);
-    const bMinPumpV = Math.abs(b.waterPumpVoltage?.minimum ?? 0);
+    const bAvgMotorC = Math.abs(motorObj.average ?? 0);
+    const bMaxMotorC = Math.abs(motorObj.maximum ?? 0);
+    const bMinMotorC = Math.abs(motorObj.minimum ?? 0);
+
+    const bAvgMotorV = Math.abs(motorVObj.average ?? 0);
+    const bMaxMotorV = Math.abs(motorVObj.maximum ?? 0);
+    const bMinMotorV = Math.abs(motorVObj.minimum ?? 0);
 
     // Validate LED: Reject impossible sensor noise (e.g., 25-27A on 5A sensor)
     if (bAvgLedC <= MAX_VALID_DC_CURRENT) {
@@ -154,25 +156,25 @@ function parseAggregates(minuteAggregates) {
       if (bMaxLedV > maxLedV) maxLedV = bMaxLedV;
     }
 
-    // Validate Pump: Reject impossible sensor noise
-    if (bAvgPumpC <= MAX_VALID_DC_CURRENT) {
-      sumPumpC += bAvgPumpC * samples;
-      validPumpSamples += samples;
-      if (bMinPumpC < minPumpC) minPumpC = bMinPumpC;
-      if (bMaxPumpC > maxPumpC && bMaxPumpC <= MAX_VALID_DC_CURRENT) maxPumpC = bMaxPumpC;
+    // Validate DC Motor: Reject impossible sensor noise
+    if (bAvgMotorC <= MAX_VALID_DC_CURRENT) {
+      sumMotorC += bAvgMotorC * samples;
+      validMotorSamples += samples;
+      if (bMinMotorC < minMotorC) minMotorC = bMinMotorC;
+      if (bMaxMotorC > maxMotorC && bMaxMotorC <= MAX_VALID_DC_CURRENT) maxMotorC = bMaxMotorC;
     }
 
-    if (bAvgPumpV <= MAX_VALID_VOLTAGE) {
-      sumPumpV += bAvgPumpV * samples;
-      if (bMinPumpV < minPumpV) minPumpV = bMinPumpV;
-      if (bMaxPumpV > maxPumpV) maxPumpV = bMaxPumpV;
+    if (bAvgMotorV <= MAX_VALID_VOLTAGE) {
+      sumMotorV += bAvgMotorV * samples;
+      if (bMinMotorV < minMotorV) minMotorV = bMinMotorV;
+      if (bMaxMotorV > maxMotorV) maxMotorV = bMaxMotorV;
     }
   }
 
   const avgLedC = validLedSamples > 0 ? sumLedC / validLedSamples : 0;
   const avgLedV = validLedSamples > 0 ? sumLedV / validLedSamples : 0;
-  const avgPumpC = validPumpSamples > 0 ? sumPumpC / validPumpSamples : 0;
-  const avgPumpV = validPumpSamples > 0 ? sumPumpV / validPumpSamples : 0;
+  const avgMotorC = validMotorSamples > 0 ? sumMotorC / validMotorSamples : 0;
+  const avgMotorV = validMotorSamples > 0 ? sumMotorV / validMotorSamples : 0;
 
   return {
     totalSamples,
@@ -187,21 +189,21 @@ function parseAggregates(minuteAggregates) {
       maximum: maxLedV === -Infinity ? 0 : maxLedV,
       average: avgLedV
     },
-    waterPumpCurrent: {
-      minimum: minPumpC === Infinity ? 0 : minPumpC,
-      maximum: maxPumpC === -Infinity ? 0 : maxPumpC,
-      average: avgPumpC
+    motorCurrent: {
+      minimum: minMotorC === Infinity ? 0 : minMotorC,
+      maximum: maxMotorC === -Infinity ? 0 : maxMotorC,
+      average: avgMotorC
     },
-    waterPumpVoltage: {
-      minimum: minPumpV === Infinity ? 0 : minPumpV,
-      maximum: maxPumpV === -Infinity ? 0 : maxPumpV,
-      average: avgPumpV
+    motorVoltage: {
+      minimum: minMotorV === Infinity ? 0 : minMotorV,
+      maximum: maxMotorV === -Infinity ? 0 : maxMotorV,
+      average: avgMotorV
     }
   };
 }
 
 // ========================================================
-// CORE FETCH & STRICT MATHEMATICAL CALCULATION ENGINE
+// CORE FETCH & MOTOR-SPECIFIC CLASSIFICATION
 // ========================================================
 async function fetchFirebaseTelemetry() {
   try {
@@ -223,90 +225,96 @@ async function fetchFirebaseTelemetry() {
       aggData = await aggRes.value.json();
     }
 
-    // 1. Extract and sanitize raw sensor values
+    // 1. Extract and sanitize raw sensor values (accepting both new motor* and existing waterPump* fields)
     let rawLedC = Number(liveData?.ledCurrent ?? liveData?.current1);
     let rawLedV = Number(liveData?.ledVoltage ?? liveData?.voltage1);
-    let rawPumpC = Number(liveData?.waterPumpCurrent ?? liveData?.current2);
-    let rawPumpV = Number(liveData?.waterPumpVoltage ?? liveData?.voltage2);
+    let rawMotorC = Number(liveData?.motorCurrent ?? liveData?.waterPumpCurrent ?? liveData?.current2);
+    let rawMotorV = Number(liveData?.motorVoltage ?? liveData?.waterPumpVoltage ?? liveData?.voltage2);
     let rawTimestamp = Number(liveData?.timestamp);
 
     // Filter invalid readings (NaN, Infinity, negative voltage, sensor noise > 6A)
     const ledCurrent = (!isNaN(rawLedC) && isFinite(rawLedC) && Math.abs(rawLedC) <= MAX_VALID_DC_CURRENT) ? Math.abs(rawLedC) : telemetryCache.live.ledCurrent;
     const ledVoltage = (!isNaN(rawLedV) && isFinite(rawLedV) && rawLedV >= MIN_VALID_VOLTAGE && rawLedV <= MAX_VALID_VOLTAGE) ? rawLedV : telemetryCache.live.ledVoltage;
-    const pumpCurrent = (!isNaN(rawPumpC) && isFinite(rawPumpC) && Math.abs(rawPumpC) <= MAX_VALID_DC_CURRENT) ? Math.abs(rawPumpC) : telemetryCache.live.waterPumpCurrent;
-    const pumpVoltage = (!isNaN(rawPumpV) && isFinite(rawPumpV) && rawPumpV >= MIN_VALID_VOLTAGE && rawPumpV <= MAX_VALID_VOLTAGE) ? rawPumpV : telemetryCache.live.waterPumpVoltage;
+    const motorCurrent = (!isNaN(rawMotorC) && isFinite(rawMotorC) && Math.abs(rawMotorC) <= MAX_VALID_DC_CURRENT) ? Math.abs(rawMotorC) : telemetryCache.live.motorCurrent;
+    const motorVoltage = (!isNaN(rawMotorV) && isFinite(rawMotorV) && rawMotorV >= MIN_VALID_VOLTAGE && rawMotorV <= MAX_VALID_VOLTAGE) ? rawMotorV : telemetryCache.live.motorVoltage;
 
-    // Normalizing timestamp to milliseconds
     const currentTimestampMs = (!isNaN(rawTimestamp) && rawTimestamp > 0)
       ? (rawTimestamp < 10000000000 ? rawTimestamp * 1000 : rawTimestamp)
       : Date.now();
 
-    // 2. Strict DC power calculation: P = V * I (no hardcoded multipliers!)
+    // 2. Strict DC power calculation: P = V * I
     const ledPowerWatts = ledVoltage * ledCurrent;
-    const pumpPowerWatts = pumpVoltage * pumpCurrent;
-    const totalPowerWatts = ledPowerWatts + pumpPowerWatts;
+    const motorPowerWatts = motorVoltage * motorCurrent;
+    const totalPowerWatts = ledPowerWatts + motorPowerWatts;
 
-    // Device operating status
+    // Device operating states
     const ledStatus = ledCurrent > 0.05 ? 'ON' : 'OFF';
-    const pumpStatus = pumpCurrent > 0.05 ? 'RUNNING' : 'IDLE';
+
+    // DC Motor Specific State Classification
+    let motorStatus = 'OFF';
+    if (motorCurrent <= 0.05) {
+      motorStatus = 'OFF';
+    } else if (motorCurrent > 2.5) {
+      motorStatus = 'STALL / OVERLOAD';
+    } else if (motorCurrent > 1.2) {
+      motorStatus = 'STARTUP / HIGH LOAD';
+    } else {
+      motorStatus = 'NORMAL RUNNING';
+    }
 
     // 3. Trapezoidal Energy Integration using Actual Timestamps
     if (accumulatorState.lastTimestampMs === 0) {
       accumulatorState.lastTimestampMs = currentTimestampMs;
       accumulatorState.firstTimestampMs = currentTimestampMs;
       accumulatorState.lastLedPowerW = ledPowerWatts;
-      accumulatorState.lastPumpPowerW = pumpPowerWatts;
+      accumulatorState.lastMotorPowerW = motorPowerWatts;
     } else if (currentTimestampMs > accumulatorState.lastTimestampMs) {
       const elapsedMs = currentTimestampMs - accumulatorState.lastTimestampMs;
       if (elapsedMs <= 60000) {
         const deltaLedKwh = integrateEnergy(accumulatorState.lastLedPowerW, ledPowerWatts, elapsedMs);
-        const deltaPumpKwh = integrateEnergy(accumulatorState.lastPumpPowerW, pumpPowerWatts, elapsedMs);
+        const deltaMotorKwh = integrateEnergy(accumulatorState.lastMotorPowerW, motorPowerWatts, elapsedMs);
 
         accumulatorState.accumulatedLedKwh += deltaLedKwh;
-        accumulatorState.accumulatedPumpKwh += deltaPumpKwh;
+        accumulatorState.accumulatedMotorKwh += deltaMotorKwh;
       }
       accumulatorState.lastTimestampMs = currentTimestampMs;
       accumulatorState.lastLedPowerW = ledPowerWatts;
-      accumulatorState.lastPumpPowerW = pumpPowerWatts;
+      accumulatorState.lastMotorPowerW = motorPowerWatts;
       saveAccumulatorState();
     }
 
     const aggSummary = parseAggregates(aggData) || telemetryCache.aggregatesSummary;
 
-    // Ensure accumulated energy includes minute buckets historical baseline if accumulator is fresh
     let totalLedKwh = accumulatorState.accumulatedLedKwh;
-    let totalPumpKwh = accumulatorState.accumulatedPumpKwh;
+    let totalMotorKwh = accumulatorState.accumulatedMotorKwh;
 
-    // If accumulator just started, calculate base energy from validated aggregate minute buckets
-    if (totalLedKwh === 0 && totalPumpKwh === 0 && aggSummary?.bucketsCount > 0) {
+    // Initialize baseline from aggregates if fresh state
+    if (totalLedKwh === 0 && totalMotorKwh === 0 && aggSummary?.bucketsCount > 0) {
       const hours = aggSummary.bucketsCount / 60;
       const baseLedW = aggSummary.ledVoltage.average * aggSummary.ledCurrent.average;
-      const basePumpW = aggSummary.waterPumpVoltage.average * aggSummary.waterPumpCurrent.average;
+      const baseMotorW = aggSummary.motorVoltage.average * aggSummary.motorCurrent.average;
       totalLedKwh = (baseLedW * hours) / 1000;
-      totalPumpKwh = (basePumpW * hours) / 1000;
+      totalMotorKwh = (baseMotorW * hours) / 1000;
       accumulatorState.accumulatedLedKwh = totalLedKwh;
-      accumulatorState.accumulatedPumpKwh = totalPumpKwh;
+      accumulatorState.accumulatedMotorKwh = totalMotorKwh;
       saveAccumulatorState();
     }
 
-    const totalKwh = totalLedKwh + totalPumpKwh;
+    const totalKwh = totalLedKwh + totalMotorKwh;
 
-    // 4. Exact Tariff Energy Charges: Energy Charge = Cumulative kWh * Tariff Rate (₹8)
+    // 4. Energy Charges at ₹8.00/Unit
     const ledEnergyChargeINR = totalLedKwh * TARIFF_RATE_PER_UNIT;
-    const pumpEnergyChargeINR = totalPumpKwh * TARIFF_RATE_PER_UNIT;
+    const motorEnergyChargeINR = totalMotorKwh * TARIFF_RATE_PER_UNIT;
     const totalEnergyChargeINR = totalKwh * TARIFF_RATE_PER_UNIT;
 
     // 5. Monthly Projections
-    // Elapsed hours for historical calculation
     const elapsedHours = (aggSummary?.bucketsCount > 0)
       ? (aggSummary.bucketsCount / 60)
       : Math.max((Date.now() - (accumulatorState.firstTimestampMs || Date.now())) / 3600000, 0.1);
 
-    // A. Historical Average Projection: (Total kWh / Elapsed Hours) * 720 hours
     const historicalMonthlyUnits = elapsedHours > 0 ? (totalKwh / elapsedHours) * 720 : 0;
     const historicalMonthlyCostINR = historicalMonthlyUnits * TARIFF_RATE_PER_UNIT;
 
-    // B. Current Load Monthly Projection: (Instant kW) * 720 hours
     const currentLoadMonthlyUnits = (totalPowerWatts / 1000) * 720;
     const currentLoadMonthlyCostINR = currentLoadMonthlyUnits * TARIFF_RATE_PER_UNIT;
 
@@ -314,8 +322,11 @@ async function fetchFirebaseTelemetry() {
       live: {
         ledCurrent,
         ledVoltage,
-        waterPumpCurrent: pumpCurrent,
-        waterPumpVoltage: pumpVoltage,
+        motorCurrent,
+        motorVoltage,
+        // Backward compatibility
+        waterPumpCurrent: motorCurrent,
+        waterPumpVoltage: motorVoltage,
         timestamp: currentTimestampMs
       },
       led: {
@@ -328,15 +339,26 @@ async function fetchFirebaseTelemetry() {
         stats: aggSummary.ledCurrent,
         voltageStats: aggSummary.ledVoltage
       },
+      dcMotor: {
+        status: motorStatus,
+        current: motorCurrent,
+        voltage: motorVoltage,
+        instantPowerWatts: motorPowerWatts,
+        cumulativeKwh: totalMotorKwh,
+        energyChargeINR: motorEnergyChargeINR,
+        stats: aggSummary.motorCurrent,
+        voltageStats: aggSummary.motorVoltage
+      },
+      // Backward compatibility alias for waterPump
       waterPump: {
-        status: pumpStatus,
-        current: pumpCurrent,
-        voltage: pumpVoltage,
-        instantPowerWatts: pumpPowerWatts,
-        cumulativeKwh: totalPumpKwh,
-        energyChargeINR: pumpEnergyChargeINR,
-        stats: aggSummary.waterPumpCurrent,
-        voltageStats: aggSummary.waterPumpVoltage
+        status: motorStatus,
+        current: motorCurrent,
+        voltage: motorVoltage,
+        instantPowerWatts: motorPowerWatts,
+        cumulativeKwh: totalMotorKwh,
+        energyChargeINR: motorEnergyChargeINR,
+        stats: aggSummary.motorCurrent,
+        voltageStats: aggSummary.motorVoltage
       },
       systemOverview: {
         totalPowerWatts,
@@ -369,7 +391,7 @@ async function fetchFirebaseTelemetry() {
   }
 }
 
-// Endpoint: Live Telemetry & Calculations
+// Endpoint: Live Telemetry
 app.get('/api/telemetry', async (req, res) => {
   const data = await fetchFirebaseTelemetry();
   res.json({
@@ -378,22 +400,28 @@ app.get('/api/telemetry', async (req, res) => {
   });
 });
 
-// Endpoint: Manual Simulation / Override for Testing
+// Endpoint: Manual Simulation / Testing Console
 app.post('/api/telemetry/simulate', (req, res) => {
   const { current_one, current_two, voltage_two, voltage_one } = req.body;
   if (current_one !== undefined) telemetryCache.live.ledCurrent = Math.abs(Number(current_one));
   if (voltage_one !== undefined) telemetryCache.live.ledVoltage = Number(voltage_one);
-  if (current_two !== undefined) telemetryCache.live.waterPumpCurrent = Math.abs(Number(current_two));
-  if (voltage_two !== undefined) telemetryCache.live.waterPumpVoltage = Number(voltage_two);
+  if (current_two !== undefined) {
+    telemetryCache.live.motorCurrent = Math.abs(Number(current_two));
+    telemetryCache.live.waterPumpCurrent = telemetryCache.live.motorCurrent;
+  }
+  if (voltage_two !== undefined) {
+    telemetryCache.live.motorVoltage = Number(voltage_two);
+    telemetryCache.live.waterPumpVoltage = telemetryCache.live.motorVoltage;
+  }
 
   const c1 = telemetryCache.live.ledCurrent;
   const v1 = telemetryCache.live.ledVoltage;
-  const c2 = telemetryCache.live.waterPumpCurrent;
-  const v2 = telemetryCache.live.waterPumpVoltage;
+  const c2 = telemetryCache.live.motorCurrent;
+  const v2 = telemetryCache.live.motorVoltage;
 
   const pLed = v1 * c1;
-  const pPump = v2 * c2;
-  const pTotal = pLed + pPump;
+  const pMotor = v2 * c2;
+  const pTotal = pLed + pMotor;
 
   telemetryCache.led = {
     ...telemetryCache.led,
@@ -403,13 +431,20 @@ app.post('/api/telemetry/simulate', (req, res) => {
     instantPowerWatts: pLed
   };
 
-  telemetryCache.waterPump = {
-    ...telemetryCache.waterPump,
-    status: c2 > 0.05 ? 'RUNNING' : 'IDLE',
+  let motorStatus = 'OFF';
+  if (c2 <= 0.05) motorStatus = 'OFF';
+  else if (c2 > 2.5) motorStatus = 'STALL / OVERLOAD';
+  else if (c2 > 1.2) motorStatus = 'STARTUP / HIGH LOAD';
+  else motorStatus = 'NORMAL RUNNING';
+
+  telemetryCache.dcMotor = {
+    ...telemetryCache.dcMotor,
+    status: motorStatus,
     current: c2,
     voltage: v2,
-    instantPowerWatts: pPump
+    instantPowerWatts: pMotor
   };
+  telemetryCache.waterPump = telemetryCache.dcMotor;
 
   telemetryCache.systemOverview.totalPowerWatts = pTotal;
   telemetryCache.lastUpdated = new Date().toISOString();
@@ -427,38 +462,40 @@ app.post('/api/chat', async (req, res) => {
 
   const telemetry = await fetchFirebaseTelemetry();
   const led = telemetry.led;
-  const pump = telemetry.waterPump;
+  const motor = telemetry.dcMotor;
   const overview = telemetry.systemOverview;
   const proj = overview.projections;
 
   const systemPrompt = `You are "AuraIoT", an expert Electrical Engineering and Energy Systems Assistant.
 You have direct real-time access to the verified telemetry and calculation engine.
 
-CRITICAL CALCULATION SPECIFICATION:
-1. DC Power Formula:
-   - LED Power = ledVoltage * ledCurrent = ${led.voltage.toFixed(2)} V * ${led.current.toFixed(3)} A = ${led.instantPowerWatts.toFixed(3)} W
-   - Pump Power = waterPumpVoltage * waterPumpCurrent = ${pump.voltage.toFixed(2)} V * ${pump.current.toFixed(3)} A = ${pump.instantPowerWatts.toFixed(3)} W
-   - Total Instant Power = ${overview.totalPowerWatts.toFixed(3)} W
-2. Energy Integration & Tariff:
-   - Cumulative Energy = ${overview.cumulativeUnitsKwh.toFixed(4)} Units (kWh) integrated via timestamps.
-   - Energy Charge = Cumulative Units * ₹${TARIFF_RATE_PER_UNIT}/Unit = ₹${overview.energyChargeINR.toFixed(2)}
-   - Device Breakdown:
-     * LED Energy: ${led.cumulativeKwh.toFixed(4)} kWh (₹${led.energyChargeINR.toFixed(2)})
-     * Pump Energy: ${pump.cumulativeKwh.toFixed(4)} kWh (₹${pump.energyChargeINR.toFixed(2)})
-3. Projections (Distinct Definitions):
-   - Historical Average Projection: ${proj.historicalAverage.monthlyUnits.toFixed(1)} Units/month (₹${proj.historicalAverage.monthlyCostINR.toFixed(2)}/month)
-   - Current Load Projection: ${proj.currentLoad.monthlyUnits.toFixed(1)} Units/month (₹${proj.currentLoad.monthlyCostINR.toFixed(2)}/month)
-4. Sensor Anomaly Note:
-   - ACS712 DC sensors require offset and sensitivity calibration. High values (>6A) in raw history are filtered noise and must not be described as genuine overloads without physical verification.
-   - The reported pump voltage of 1.18V yields 0.216W (1.18V * 0.183A). Note if the pump voltage appears lower than nominal operating voltage.
+HARDWARE & OPERATING SPECIFICATION:
+- Loads:
+  1. DC LED Fixture: Monitored via ACS712 5A and voltage sensor.
+  2. 5V DC Motor (formerly labelled Water Pump): Monitored via ACS712 5A and voltage sensor.
+- ACS712-5A Nominal Sensitivity: 185 mV/A. Equation: I = |Vout - Vzero| / 0.185.
+- DC Motor Specific Operating States:
+  * OFF: Current ≤ 0.05A
+  * NORMAL RUNNING: 0.05A - 1.2A
+  * STARTUP / HIGH LOAD: 1.2A - 2.5A (brief startup surges are normal motor inrush and must NOT be categorized as fatal overloads)
+  * STALL / OVERLOAD: > 2.5A (indicates locked rotor or mechanical stall)
+- Note on Motor Voltage: The reported voltage is ${motor.voltage.toFixed(2)}V. For a 5V rated motor, 1.18V indicates that the voltage measurement circuit/divider may need multimeter calibration, but mathematically power is strictly ${motor.voltage.toFixed(2)}V * ${motor.current.toFixed(3)}A = ${motor.instantPowerWatts.toFixed(3)}W.
 
-Answer queries with technical accuracy, clear markdown tables, and exact mathematical integrity.`;
+CURRENT VERIFIED TELEMETRY:
+- LED: ${led.voltage.toFixed(2)}V × ${led.current.toFixed(3)}A = ${led.instantPowerWatts.toFixed(3)}W (${led.status})
+- DC Motor: ${motor.voltage.toFixed(2)}V × ${motor.current.toFixed(3)}A = ${motor.instantPowerWatts.toFixed(3)}W (${motor.status})
+- Total Power: ${overview.totalPowerWatts.toFixed(3)}W
+- Cumulative Energy: ${overview.cumulativeUnitsKwh.toFixed(4)} Units (kWh) | Energy Charge: ₹${overview.energyChargeINR.toFixed(2)} (@ ₹8/Unit)
+- Historical Average Projection: ${proj.historicalAverage.monthlyUnits.toFixed(1)} Units/mo (₹${proj.historicalAverage.monthlyCostINR.toFixed(2)})
+- Current Load Projection: ${proj.currentLoad.monthlyUnits.toFixed(1)} Units/mo (₹${proj.currentLoad.monthlyCostINR.toFixed(2)})
+
+Answer questions with electrical precision, concise tables, and clear engineering advice.`;
 
   const clientApiKey = req.headers['x-groq-key'] || process.env.GROQ_API_KEY;
 
   if (!clientApiKey) {
     return res.status(200).json({
-      reply: `⚠️ **Groq API Key Required**\n\n**Verified Mathematical Telemetry:**\n- **LED:** ${led.voltage.toFixed(2)} V × ${led.current.toFixed(3)} A = **${led.instantPowerWatts.toFixed(3)} W**\n- **Pump:** ${pump.voltage.toFixed(2)} V × ${pump.current.toFixed(3)} A = **${pump.instantPowerWatts.toFixed(3)} W**\n- **Total Instant Power:** **${overview.totalPowerWatts.toFixed(3)} W**\n- **Energy Charge:** ${overview.cumulativeUnitsKwh.toFixed(4)} Units × ₹8.00 = **₹${overview.energyChargeINR.toFixed(2)}**\n\nPlease add your \`GROQ_API_KEY\` to chat.`
+      reply: `⚠️ **Groq API Key Required**\n\n**Verified Mathematical Telemetry:**\n- **LED:** ${led.voltage.toFixed(2)} V × ${led.current.toFixed(3)} A = **${led.instantPowerWatts.toFixed(3)} W**\n- **DC Motor:** ${motor.voltage.toFixed(2)} V × ${motor.current.toFixed(3)} A = **${motor.instantPowerWatts.toFixed(3)} W** (${motor.status})\n- **Total Instant Power:** **${overview.totalPowerWatts.toFixed(3)} W**\n- **Energy Charge:** ${overview.cumulativeUnitsKwh.toFixed(4)} Units × ₹8.00 = **₹${overview.energyChargeINR.toFixed(2)}**\n\nPlease add your \`GROQ_API_KEY\` to chat.`
     });
   }
 
@@ -496,7 +533,7 @@ app.listen(PORT, () => {
   console.log(`===============================================`);
   console.log(`🚀 AuraIoT Server running at: http://localhost:${PORT}`);
   console.log(`📡 Connected to Firebase: ${FIREBASE_DB_URL}`);
-  console.log(`⚡ Strict DC Power Engine Active: P = V * I`);
-  console.log(`💾 Trapezoidal Energy & State Persistence Active`);
+  console.log(`⚡ Strict DC Power Engine: P = V * I`);
+  console.log(`⚙️ DC Motor Classification & ACS712-5A Engine Active`);
   console.log(`===============================================`);
 });
