@@ -511,41 +511,20 @@
     <!-- ========================================== -->
     <section class="slide-container" id="slide-2">
       <div class="slide-head">
-        <div class="slide-category">📋 Presentation Roadmap</div>
-        <h2 class="slide-title">Table of Contents</h2>
-        <p class="slide-subtitle">A structured overview of the S-3 IOT system engineering, methodology, and results</p>
+        <h2 class="slide-title" style="font-size: 2.4rem; font-weight: 800; color: #000;">CONTENTS</h2>
       </div>
-      <div class="slide-body">
-        <div class="grid-2">
-          <div class="panel-card" onclick="goToSlide(3)" style="cursor: pointer;">
-            <h4><span class="badge-tag tag-blue">01</span> Objective &amp; Problem Statement</h4>
-            <p>Industry pain points in conventional electrical metering, motor surge blind spots, and the S-3 IOT project mission.</p>
-          </div>
-          <div class="panel-card" onclick="goToSlide(4)" style="cursor: pointer;">
-            <h4><span class="badge-tag tag-green">02</span> System Architecture &amp; Block Diagram</h4>
-            <p>Four-stage edge-to-cloud data pipeline: Physical edge, ESP32 MCU, Firebase RTDB, and Groq LLM.</p>
-          </div>
-          <div class="panel-card" onclick="goToSlide(5)" style="cursor: pointer;">
-            <h4><span class="badge-tag tag-amber">03</span> Circuit Diagram &amp; Hardware Schematics</h4>
-            <p>ESP32 ADC interface, ACS712-5A Hall sensor divider network, voltage dividers, and dual DC load protection.</p>
-          </div>
-          <div class="panel-card" onclick="goToSlide(6)" style="cursor: pointer;">
-            <h4><span class="badge-tag tag-blue">04</span> Experimental Results &amp; Verification</h4>
-            <p>Strict mathematical DC verification, motor state classification, trapezoidal energy integration, and Indian Rupee billing.</p>
-          </div>
-          <div class="panel-card" onclick="goToSlide(7)" style="cursor: pointer;">
-            <h4><span class="badge-tag tag-green">05</span> Conclusion &amp; Future Scope</h4>
-            <p>Summary of accomplishments, 3-phase AC expansion (CT Clamps), SSR active load protection, and TinyML edge intelligence.</p>
-          </div>
-          <div class="panel-card" onclick="goToSlide(8)" style="cursor: pointer;">
-            <h4><span class="badge-tag tag-blue">06</span> Live Demonstration &amp; Q&amp;A</h4>
-            <p>Interactive web dashboard walkthrough with responsive zero-scroll mobile view and autonomous AI queries.</p>
-          </div>
-        </div>
+      <div class="slide-body" style="padding: 30px 40px;">
+        <ul style="font-size: 1.4rem; line-height: 2.2; color: #0f172a; font-weight: 700; list-style-type: disc; margin-left: 30px;">
+          <li style="margin-bottom: 16px; cursor: pointer;" onclick="goToSlide(3)">Objective &amp; Problem Statement</li>
+          <li style="margin-bottom: 16px; cursor: pointer;" onclick="goToSlide(4)">Block Diagram</li>
+          <li style="margin-bottom: 16px; cursor: pointer;" onclick="goToSlide(5)">Circuit Diagram</li>
+          <li style="margin-bottom: 16px; cursor: pointer;" onclick="goToSlide(6)">Result</li>
+          <li style="margin-bottom: 16px; cursor: pointer;" onclick="goToSlide(7)">Conclusion &amp; Future Scope</li>
+        </ul>
       </div>
       <div class="slide-foot">
-        <span>S-3 IOT &bull; Agenda</span>
-        <span class="mono">Navigation: Arrow Keys or Click Panels</span>
+        <span>SOLAR BATTERY MANAGEMENT AND ENERGY MONITORING SYSTEM</span>
+        <span class="mono">Slide 2: Contents</span>
       </div>
     </section>
 
@@ -554,38 +533,24 @@
     <!-- ========================================== -->
     <section class="slide-container" id="slide-3">
       <div class="slide-head">
-        <div class="slide-category">🎯 Project Motivation</div>
-        <h2 class="slide-title">Objective &amp; Problem Statement</h2>
-        <p class="slide-subtitle">Bridging the gap between raw edge sensors and verifiable, AI-assisted electrical intelligence</p>
+        <h2 class="slide-title" style="font-size: 2.2rem; font-weight: 800; color: #000;">OBJECTIVE &amp; PROBLEM STATEMENT</h2>
       </div>
-      <div class="slide-body">
-        <div class="grid-2">
-          <!-- Problem Column -->
-          <div class="panel-card" style="border-left: 4px solid var(--danger); background: var(--danger-light);">
-            <h4 style="color: var(--danger);">⚠️ Problem Statement</h4>
-            <ul>
-              <li><strong>Delayed / Post-Facto Data:</strong> Conventional energy meters provide monthly totals without real-time, load-level instantaneous power visibility.</li>
-              <li><strong>Critical Motor Fault Blindness:</strong> DC/AC pump motors experience 1.5–2.5&times; startup surges and stall currents (&gt;2.5A) that cause coil burnout without detection.</li>
-              <li><strong>AI Math Hallucinations in IoT:</strong> Unconstrained LLMs frequently guess sensor values, confuse instantaneous Watts with accumulated kWh, or invent invalid bills.</li>
-              <li><strong>Edge Calibration Skew:</strong> Uncalibrated sensor dividers and electrical noise distort telemetry if left unverified by a single source of truth.</li>
-            </ul>
-          </div>
-
-          <!-- Objective Column -->
-          <div class="panel-card" style="border-left: 4px solid var(--success); background: var(--success-light);">
-            <h4 style="color: var(--success);">🎯 Project Objectives</h4>
-            <ul>
-              <li><strong>High-Speed Dual-Load Telemetry:</strong> Continuously sample voltage and current from an LED fixture and 5V DC Motor at 1 Hz via ESP32 ADC.</li>
-              <li><strong>Deterministic Backend Engine:</strong> Execute strict mathematical DC formulas ($P = V \times I$) and timestamp-based trapezoidal integration ($\Delta E$) in Node.js.</li>
-              <li><strong>Cloud Aggregation &amp; Persistence:</strong> Stream 1-minute statistical aggregates (Min/Max/Avg) to Firebase RTDB and persist accumulators across restarts.</li>
-              <li><strong>Autonomous Groq AI Copilot:</strong> Feed verified JSON to Groq (`openai/gpt-oss-120b`) for fault diagnosis, surge alerts, and Indian Rupee (₹8.00/kWh) projections.</li>
-            </ul>
-          </div>
-        </div>
+      <div class="slide-body" style="padding: 20px 40px;">
+        <ul style="font-size: 1.15rem; line-height: 1.85; color: #1e293b; list-style-type: disc; margin-left: 30px;">
+          <li style="margin-bottom: 10px;">Solar battery health and depth of discharge require continuous automated monitoring.</li>
+          <li style="margin-bottom: 10px;">Fluctuating DC loads cause voltage sag and sudden battery drain.</li>
+          <li style="margin-bottom: 10px;">Inductive DC pump motors draw heavy startup inrush current and risk stall burnout.</li>
+          <li style="margin-bottom: 10px;">Traditional energy meters fail to provide real-time, load-level power insights.</li>
+          <li style="margin-bottom: 10px;">Uncalibrated sensor inputs lead to calculation errors and billing discrepancies.</li>
+          <li style="margin-bottom: 10px;">Automate energy monitoring using ESP32, ACS712 current sensors, and voltage dividers.</li>
+          <li style="margin-bottom: 10px;">Monitor real-time DC power consumption using strict physical formulas ($P = V \times I$).</li>
+          <li style="margin-bottom: 10px;">Classify motor operating states (Normal Run, Startup Surge, Stall Overload) in real time.</li>
+          <li style="margin-bottom: 10px;">Integrate cloud telemetry and Groq AI Copilot for autonomous billing analytics.</li>
+        </ul>
       </div>
       <div class="slide-foot">
-        <span>S-3 IOT &bull; Motivation &amp; Objectives</span>
-        <span class="mono">Target Tariff: ₹8.00 / Unit (INR)</span>
+        <span>SOLAR BATTERY MANAGEMENT AND ENERGY MONITORING SYSTEM</span>
+        <span class="mono">Slide 3: Objective &amp; Problem Statement</span>
       </div>
     </section>
 
@@ -867,38 +832,23 @@
     <!-- ========================================== -->
     <section class="slide-container" id="slide-7">
       <div class="slide-head">
-        <div class="slide-category">🚀 Summary &amp; Roadmap</div>
-        <h2 class="slide-title">Conclusion &amp; Future Scope</h2>
-        <p class="slide-subtitle">Achievements realized and prospective enhancements for industrial deployment</p>
+        <h2 class="slide-title" style="font-size: 2.2rem; font-weight: 800; color: #000;">CONCLUSION &amp; FUTURE SCOPE</h2>
       </div>
-      <div class="slide-body">
-        <div class="grid-2">
-          <!-- Conclusion -->
-          <div class="panel-card" style="border-top: 4px solid var(--primary);">
-            <h4 style="color: var(--primary);">✅ Project Accomplishments</h4>
-            <ul>
-              <li><strong>End-to-End IoT Pipeline:</strong> Successfully engineered an edge-to-cloud facility monitoring platform connecting ESP32 to Firebase RTDB and Groq AI.</li>
-              <li><strong>Eliminated Math Inconsistencies:</strong> Solved LLM hallucinations by centralizing calculations in a backend JSON data contract.</li>
-              <li><strong>High-Density UI:</strong> Designed a zero-scroll responsive web app with 100vh desktop fit, mobile tab switching, and locked bottom chat bar.</li>
-              <li><strong>Physical Fault Awareness:</strong> Validated classification for DC motor startup surge, nominal operation, and stall scenarios.</li>
-            </ul>
-          </div>
-
-          <!-- Future Scope -->
-          <div class="panel-card" style="border-top: 4px solid var(--success);">
-            <h4 style="color: var(--success);">🔮 Future Scope &amp; Industrialization</h4>
-            <ul>
-              <li><strong>3-Phase AC Grid Monitoring:</strong> Integrate non-invasive split-core Current Transformers (SCT-013 100A) and PZEM-004T for 230V/415V utility monitoring.</li>
-              <li><strong>Active Solid-State Relay Tripping:</strong> Implement hardware relay interlocking to auto-trip loads upon detecting persistent motor stall (>2.5A for >3s).</li>
-              <li><strong>TinyML Edge Intelligence:</strong> Deploy on-device TensorFlow Lite Micro neural networks on ESP32 for offline anomaly detection without cloud dependence.</li>
-              <li><strong>KSEB Time-of-Day (ToD) Optimization:</strong> Automated load-shedding scheduling during peak tariff windows (6:00 PM – 10:00 PM).</li>
-            </ul>
-          </div>
-        </div>
+      <div class="slide-body" style="padding: 20px 40px;">
+        <ul style="font-size: 1.15rem; line-height: 1.85; color: #1e293b; list-style-type: disc; margin-left: 30px;">
+          <li style="margin-bottom: 12px;">Demonstrates a complete Solar Battery Management and Energy Monitoring System.</li>
+          <li style="margin-bottom: 12px;">Continuously measures voltage, current, and power across LED and 5V pump motor loads.</li>
+          <li style="margin-bottom: 12px;">Eliminates AI calculation hallucinations via a centralized deterministic calculation engine.</li>
+          <li style="margin-bottom: 12px;">Automates motor operational state classification for equipment protection.</li>
+          <li style="margin-bottom: 12px;">Integrates Groq AI Copilot for autonomous diagnostics and accurate tariff estimations.</li>
+          <li style="margin-bottom: 12px;">Future integration of Maximum Power Point Tracking (MPPT) solar charge controller.</li>
+          <li style="margin-bottom: 12px;">Automated Solid-State Relay (SSR) cut-off protection during persistent motor stall.</li>
+          <li style="margin-bottom: 12px;">Deployment of TinyML on ESP32 for predictive battery State of Health (SoH).</li>
+        </ul>
       </div>
       <div class="slide-foot">
-        <span>S-3 IOT &bull; Roadmap</span>
-        <span class="mono">Next Steps: 3-Phase AC &bull; SSR Cutoff &bull; TinyML</span>
+        <span>SOLAR BATTERY MANAGEMENT AND ENERGY MONITORING SYSTEM</span>
+        <span class="mono">Slide 7: Conclusion &amp; Future Scope</span>
       </div>
     </section>
 
