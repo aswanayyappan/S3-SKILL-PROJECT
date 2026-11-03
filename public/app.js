@@ -7,7 +7,9 @@ let localGroqKey = localStorage.getItem('groq_api_key') || '';
 const kpiTotalPower = document.getElementById('kpiTotalPower');
 const kpiTotalUnits = document.getElementById('kpiTotalUnits');
 const kpiTotalCostINR = document.getElementById('kpiTotalCostINR');
-const kpiHealthScore = document.getElementById('kpiHealthScore');
+const kpiMonthlyCostINR = document.getElementById('kpiMonthlyCostINR');
+const kpiMonthlyUnits = document.getElementById('kpiMonthlyUnits');
+const headerKsebSlab = document.getElementById('headerKsebSlab');
 
 // LED Card Elements
 const ledCurrentVal = document.getElementById('ledCurrentVal');
@@ -83,11 +85,18 @@ function updateUI(data) {
   const pLed = data.led?.instantPowerWatts ?? (c1 * (v1 > 1 ? v1 : 12));
   const pPump = data.waterPump?.instantPowerWatts ?? (c2 * (v2 > 50 ? v2 : 230));
 
-  // Executive KPI Strip
+  // Executive KPI Strip & KSEB Billing
   if (kpiTotalPower) kpiTotalPower.textContent = (pLed + pPump).toFixed(1);
   if (kpiTotalUnits) kpiTotalUnits.textContent = (data.systemOverview?.totalUnitsKWh ?? data.aggregatesSummary?.unitConsumptionKWh?.total_kWh ?? 0).toFixed(4);
-  if (kpiTotalCostINR) kpiTotalCostINR.textContent = `₹${(data.systemOverview?.totalCostINR ?? data.aggregatesSummary?.costINR?.total_inr ?? 0).toFixed(2)}`;
-  if (kpiHealthScore) kpiHealthScore.textContent = data.systemOverview?.healthScore ?? 100;
+  
+  const kseb = data.aggregatesSummary?.ksebBilling || {};
+  const domestic = kseb.domesticLT1 || {};
+  const monthly = kseb.monthlyProjection || {};
+
+  if (kpiTotalCostINR) kpiTotalCostINR.textContent = `₹${(domestic.totalBill ?? 0).toFixed(2)}`;
+  if (kpiMonthlyCostINR) kpiMonthlyCostINR.textContent = `₹${(monthly.projectedBillINR ?? 0).toFixed(2)}`;
+  if (kpiMonthlyUnits) kpiMonthlyUnits.textContent = `${(monthly.projectedUnits ?? 0).toFixed(0)} Units`;
+  if (headerKsebSlab) headerKsebSlab.textContent = domestic.slabType || 'Telescopic (≤250 Units)';
 
   // LED Updates (ledCurrent)
   ledCurrentVal.textContent = c1.toFixed(3);

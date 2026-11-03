@@ -15,8 +15,148 @@ const PORT = process.env.PORT || 3000;
 const FIREBASE_DB_URL = process.env.FIREBASE_DB_URL || 'https://s3-skills-default-rtdb.firebaseio.com/';
 const FIREBASE_AUTH_SECRET = process.env.FIREBASE_AUTH_SECRET || '';
 
-// Indian Electricity Tariff Standard rate: ₹8.00 per unit (1 Unit = 1 kWh)
-const INR_RATE_PER_UNIT = 8.00;
+// ==========================================
+// KSEB TARIFF CALCULATION ENGINE (2026 SCHEDULE)
+// ==========================================
+
+/**
+ * Calculates exact KSEB Domestic (LT-I) electricity bill
+ * @param {number} units - Total consumption in units (kWh)
+ * @param {boolean} isBPL - Below Poverty Line subsidy eligibility (<=40 units, load <= 1000W)
+ * @param {number} fixedCharge - Base fixed charge in ₹ (default ₹50 for single phase)
+ */
+function calculateKSEBDomesticBill(units, isBPL = false, fixedCharge = 50.0) {
+  if (units <= 0) {
+    return {
+      units: 0,
+      slabType: 'Zero Consumption',
+      energyCharge: 0,
+      duty: 0,
+      fac: 0,
+      fixedCharge: 0,
+      meterRent: 0,
+      totalBill: 0,
+      effectiveRatePerUnit: 0
+    };
+  }
+
+  // 1. BPL Subsidy Check (<= 40 units, ₹1.50/unit, no fixed charge)
+  if (isBPL && units <= 40) {
+    const energyCharge = units * 1.50;
+    const duty = energyCharge * 0.05; // 5% Electricity duty
+    const fac = units * 0.15; // Average Fuel Adjustment Charge ₹0.15/unit
+    const total = energyCharge + duty + fac;
+    return {
+      units: parseFloat(units.toFixed(4)),
+      slabType: 'BPL Subsidy (≤40 Units @ ₹1.50/Unit)',
+      energyCharge: parseFloat(energyCharge.toFixed(2)),
+      fixedCharge: 0,
+      duty: parseFloat(duty.toFixed(2)),
+      meterRent: 6.00,
+      fac: parseFloat(fac.toFixed(2)),
+      totalBill: parseFloat((total + 6.00).toFixed(2)),
+      effectiveRatePerUnit: parseFloat(((total + 6.00) / units).toFixed(2))
+    };
+  }
+
+  let energyCharge = 0;
+  let slabType = '';
+
+  // 2. Telescopic Slabs (<= 250 Units)
+  if (units <= 250) {
+    slabType = 'Telescopic Slabs (≤250 Units)';
+    let remaining = units;
+
+    // 0 - 50 Units @ ₹3.35
+    const u1 = Math.min(remaining, 50);
+    energyCharge += u1 * 3.35;
+    remaining -= u1;
+
+    // 51 - 100 Units @ ₹4.15
+    if (remaining > 0) {
+      const u2 = Math.min(remaining, 50);
+      energyCharge += u2 * 4.15;
+      remaining -= u2;
+    }
+
+    // 101 - 150 Units @ ₹5.30
+    if (remaining > 0) {
+      const u3 = Math.min(remaining, 50);
+      energyCharge += u3 * 5.30;
+      remaining -= u3;
+    }
+
+    // 151 - 200 Units @ ₹7.10
+    if (remaining > 0) {
+      const u4 = Math.min(remaining, 50);
+      energyCharge += u4 * 7.10;
+      remaining -= u4;
+    }
+
+    // 201 - 250 Units @ ₹8.50
+    if (remaining > 0) {
+      const u5 = Math.min(remaining, 50);
+      energyCharge += u5 * 8.50;
+      remaining -= u5;
+    }
+  } else {
+    // 3. Non-Telescopic Slabs (> 250 Units) - Entire consumption re-rated at flat rate
+    if (units <= 300) {
+      slabType = 'Non-Telescopic (251–300 Units @ ₹6.75 flat)';
+      energyCharge = units * 6.75;
+    } else if (units <= 350) {
+      slabType = 'Non-Telescopic (301–350 Units @ ₹7.60 flat)';
+      energyCharge = units * 7.60;
+    } else if (units <= 400) {
+      slabType = 'Non-Telescopic (351–400 Units @ ₹7.95 flat)';
+      energyCharge = units * 7.95;
+    } else if (units <= 500) {
+      slabType = 'Non-Telescopic (401–500 Units @ ₹8.25 flat)';
+      energyCharge = units * 8.25;
+    } else {
+      slabType = 'Non-Telescopic (>500 Units @ ₹9.20 flat)';
+      energyCharge = units * 9.20;
+    }
+  }
+
+  // Statutory & Additional Charges
+  const duty = energyCharge * 0.05; // 5% electricity duty
+  const meterRent = 6.00; // Single phase meter rent ~₹6
+  const fac = units * 0.15; // Fuel Adjustment Charge ~₹0.15/unit
+  const totalBill = energyCharge + fixedCharge + duty + meterRent + fac;
+
+  return {
+    units: parseFloat(units.toFixed(4)),
+    slabType,
+    energyCharge: parseFloat(energyCharge.toFixed(2)),
+    fixedCharge,
+    duty: parseFloat(duty.toFixed(2)),
+    meterRent,
+    fac: parseFloat(fac.toFixed(2)),
+    totalBill: parseFloat(totalBill.toFixed(2)),
+    effectiveRatePerUnit: parseFloat((totalBill / units).toFixed(2))
+  };
+}
+
+// Commercial Tariff LT-VIIA calculation helper
+function calculateKSEBCommercialBill(units) {
+  let rate = 6.05;
+  if (units > 500) rate = 9.40;
+  else if (units > 100) rate = 7.50;
+
+  const energyCharge = units * rate;
+  const duty = energyCharge * 0.05;
+  const fixed = 120.0;
+  const fac = units * 0.15;
+  const total = energyCharge + duty + fixed + fac;
+  return {
+    units: parseFloat(units.toFixed(4)),
+    tariff: 'Commercial (LT-VIIA)',
+    energyCharge: parseFloat(energyCharge.toFixed(2)),
+    totalBill: parseFloat(total.toFixed(2)),
+    ratePerUnit: rate
+  };
+}
 
 app.use(cors());
 app.use(express.json());
@@ -43,11 +183,9 @@ let telemetryCache = {
       total_kWh: 0,
       estimatedUnits: 0
     },
-    costINR: {
-      ratePerUnit: INR_RATE_PER_UNIT,
-      led_inr: 0,
-      pump_inr: 0,
-      total_inr: 0
+    ksebBilling: {
+      domestic: null,
+      commercial: null
     }
   },
   historyTrend: [],
@@ -55,7 +193,6 @@ let telemetryCache = {
   source: 'initializing'
 };
 
-// Parse /aggregates/minute buckets
 function parseAggregates(minuteAggregates) {
   if (!minuteAggregates || typeof minuteAggregates !== 'object') return null;
 
@@ -109,7 +246,6 @@ function parseAggregates(minuteAggregates) {
     if (bMinPumpV < minPumpV) minPumpV = bMinPumpV;
     if (bMaxPumpV > maxPumpV) maxPumpV = bMaxPumpV;
 
-    // Store recent history trend for live mini charts
     historyTrend.push({
       bucket: key,
       ledCurrent: parseFloat(bAvgLedC.toFixed(3)),
@@ -136,10 +272,15 @@ function parseAggregates(minuteAggregates) {
 
   const totalKWh = ledKWh + pumpKWh;
 
-  // Cost calculation in Indian Rupees (INR ₹)
-  const ledCostINR = ledKWh * INR_RATE_PER_UNIT;
-  const pumpCostINR = pumpKWh * INR_RATE_PER_UNIT;
-  const totalCostINR = totalKWh * INR_RATE_PER_UNIT;
+  // KSEB Domestic Billing for individual and total
+  const domesticTotal = calculateKSEBDomesticBill(totalKWh);
+  const domesticLed = calculateKSEBDomesticBill(ledKWh);
+  const domesticPump = calculateKSEBDomesticBill(pumpKWh);
+  const commercialTotal = calculateKSEBCommercialBill(totalKWh);
+
+  // 30-Day Monthly Projection (based on observed consumption rate)
+  const monthlyUnitsProjected = hours > 0 ? parseFloat(((totalKWh / hours) * 24 * 30).toFixed(2)) : 0;
+  const monthlyDomesticProjection = calculateKSEBDomesticBill(monthlyUnitsProjected);
 
   return {
     totalSamples,
@@ -171,14 +312,20 @@ function parseAggregates(minuteAggregates) {
       total_kWh: parseFloat(totalKWh.toFixed(5)),
       estimatedUnits: parseFloat(totalKWh.toFixed(4))
     },
-    costINR: {
-      currency: "INR (₹)",
-      ratePerUnit: INR_RATE_PER_UNIT,
-      led_inr: parseFloat(ledCostINR.toFixed(4)),
-      pump_inr: parseFloat(pumpCostINR.toFixed(4)),
-      total_inr: parseFloat(totalCostINR.toFixed(4))
+    ksebBilling: {
+      provider: "Kerala State Electricity Board (KSEB)",
+      scheduleYear: "2026",
+      domesticLT1: domesticTotal,
+      commercialLT7A: commercialTotal,
+      ledPortion: domesticLed,
+      pumpPortion: domesticPump,
+      monthlyProjection: {
+        projectedUnits: monthlyUnitsProjected,
+        projectedBillINR: monthlyDomesticProjection.totalBill,
+        slab: monthlyDomesticProjection.slabType
+      }
     },
-    recentTrend: historyTrend.slice(-15) // last 15 buckets
+    recentTrend: historyTrend.slice(-15)
   };
 }
 
@@ -212,11 +359,10 @@ async function fetchFirebaseTelemetry() {
 
     const aggSummary = parseAggregates(aggData) || telemetryCache.aggregatesSummary;
 
-    // Derived operational health score (0-100%)
     let healthScore = 100;
-    if (pumpC > 5.0) healthScore -= 20; // high pump load
-    if (ledV > 5.5) healthScore -= 15; // LED overvoltage
-    if (pumpV > 25.0 && pumpV < 180.0) healthScore -= 10; // unusual intermediate voltage
+    if (pumpC > 5.0) healthScore -= 20;
+    if (ledV > 5.5) healthScore -= 15;
+    if (pumpV > 25.0 && pumpV < 180.0) healthScore -= 10;
 
     telemetryCache = {
       live: {
@@ -234,7 +380,7 @@ async function fetchFirebaseTelemetry() {
         stats: aggSummary.ledCurrent,
         voltageStats: aggSummary.ledVoltage,
         energyKWh: aggSummary.unitConsumptionKWh.led_kWh,
-        costINR: aggSummary.costINR.led_inr
+        costINR: aggSummary.ksebBilling?.ledPortion?.energyCharge ?? 0
       },
       waterPump: {
         status: pumpStatus,
@@ -244,14 +390,17 @@ async function fetchFirebaseTelemetry() {
         stats: aggSummary.waterPumpCurrent,
         voltageStats: aggSummary.waterPumpVoltage,
         energyKWh: aggSummary.unitConsumptionKWh.pump_kWh,
-        costINR: aggSummary.costINR.pump_inr
+        costINR: aggSummary.ksebBilling?.pumpPortion?.energyCharge ?? 0
       },
       systemOverview: {
         healthScore: Math.max(healthScore, 50),
         totalPowerWatts: parseFloat(((ledC * (ledV > 1 ? ledV : 12)) + (pumpC * (pumpV > 50 ? pumpV : 230))).toFixed(1)),
         totalUnitsKWh: aggSummary.unitConsumptionKWh.total_kWh,
-        totalCostINR: aggSummary.costINR.total_inr,
-        tariffRate: `₹${INR_RATE_PER_UNIT}/Unit`
+        ksebBillINR: aggSummary.ksebBilling?.domesticLT1?.totalBill ?? 0,
+        ksebSlab: aggSummary.ksebBilling?.domesticLT1?.slabType ?? 'Telescopic',
+        monthlyProjectedBillINR: aggSummary.ksebBilling?.monthlyProjection?.projectedBillINR ?? 0,
+        monthlyProjectedUnits: aggSummary.ksebBilling?.monthlyProjection?.projectedUnits ?? 0,
+        tariffProvider: "KSEB 2026 Tariff (LT-I)"
       },
       aggregatesSummary: aggSummary,
       historyTrend: aggSummary.recentTrend || [],
@@ -272,8 +421,7 @@ app.get('/api/telemetry', async (req, res) => {
   res.json({
     success: true,
     data,
-    currency: "INR (₹)",
-    ratePerUnit: `₹${INR_RATE_PER_UNIT}`
+    kseb: data.aggregatesSummary?.ksebBilling
   });
 });
 
@@ -320,53 +468,68 @@ app.post('/api/chat', async (req, res) => {
   const telemetry = await fetchFirebaseTelemetry();
   const agg = telemetry.aggregatesSummary;
   const overview = telemetry.systemOverview;
+  const kseb = agg.ksebBilling;
+  const dom = kseb?.domesticLT1;
 
-  const systemPrompt = `You are "AuraIoT", an expert Industrial IoT Telemetry Engineer & Electrical Energy Advisor.
+  const systemPrompt = `You are "AuraIoT", an expert IoT Telemetry Engineer & Certified Electrical Energy Auditor specializing in the official Kerala State Electricity Board (KSEB) tariff schedule (2026 regulations).
 You monitor live IoT hardware connected via Firebase Realtime Database (https://s3-skills-default-rtdb.firebaseio.com/).
 
-CURRENCY & BILLING SPECIFICATION:
-- ALL financial calculations MUST strictly use INDIAN RUPEES (INR / ₹) at the standard industrial/commercial tariff of ₹${INR_RATE_PER_UNIT} per electricity unit (1 Unit = 1 kWh).
-- NEVER use USD ($), Euro (€), or other currencies. ALWAYS use Indian Rupees (₹).
+KSEB TARIFF STRUCTURE RULES & REGULATION (2026 SCHEDULE):
+1. Domestic Tariff (LT-I):
+   - Telescopic Slabs (Usage ≤ 250 Units):
+     * 0–50 Units: ₹3.35/unit
+     * 51–100 Units: ₹4.15/unit
+     * 101–150 Units: ₹5.30/unit
+     * 151–200 Units: ₹7.10/unit
+     * 201–250 Units: ₹8.50/unit
+   - Non-Telescopic Slabs (Usage > 250 Units - entire consumption re-rated at single flat rate):
+     * 251–300 units: ₹6.75/unit flat
+     * 301–350 units: ₹7.60/unit flat
+     * 351–400 units: ₹7.95/unit flat
+     * 401–500 units: ₹8.25/unit flat
+     * Above 500 units: ₹9.20/unit flat
+   - Below Poverty Line (BPL) Subsidy: For load ≤ 1000W & usage ≤ 40 units, rate is ₹1.50/unit with no fixed charge.
+   - Additional Charges:
+     * Fixed Charge: ₹50 to ₹310 depending on phase and connected load (standard single-phase: ₹50/mo)
+     * Electricity Duty: 5% of energy charges
+     * Meter Rent: ₹6–₹10/month
+     * Fuel Adjustment Charge (FAC): ₹0.10–₹0.25/unit (default ~₹0.15/unit)
+2. Commercial Tariff (LT-VIIA):
+   * 0–100 units: ₹6.05/unit
+   * 101–500 units: ₹7.50/unit
+   * Above 500 units: ₹9.40/unit
 
-LIVE SYSTEM STATUS & STATISTICAL METRICS:
-1. LED FIXTURE:
-   - Live Current: ${telemetry.live.ledCurrent} A | Status: ${telemetry.led?.status}
-   - Live Voltage: ${telemetry.live.ledVoltage} V | Instant Power: ${telemetry.led?.instantPowerWatts} W
-   - Historical Aggregates (${agg.bucketsCount} minute buckets, ${agg.totalSamples} samples):
-     * Maximum Peak Current: ${agg.ledCurrent.maximum} A
-     * Minimum Current: ${agg.ledCurrent.minimum} A
-     * Average Current: ${agg.ledCurrent.average} A
-     * Voltage: Max ${agg.ledVoltage.maximum} V, Min ${agg.ledVoltage.minimum} V, Avg ${agg.ledVoltage.average} V
-   - Energy Consumed: ${agg.unitConsumptionKWh.led_kWh} Units (kWh)
-   - Estimated Cost: ₹${agg.costINR.led_inr}
+CURRENT TELEMETRY & KSEB BILLING AUDIT:
+- LED Fixture: Live ${telemetry.live.ledCurrent} A | ${telemetry.live.ledVoltage} V | Instant ${telemetry.led?.instantPowerWatts} W
+  * Historical Current: Max ${agg.ledCurrent.maximum} A, Min ${agg.ledCurrent.minimum} A, Avg ${agg.ledCurrent.average} A
+  * Energy Consumed: ${agg.unitConsumptionKWh.led_kWh} Units (kWh)
+- Water Pump: Live ${telemetry.live.waterPumpCurrent} A | ${telemetry.live.waterPumpVoltage} V | Instant ${telemetry.waterPump?.instantPowerWatts} W
+  * Historical Current: Max ${agg.waterPumpCurrent.maximum} A, Min ${agg.waterPumpCurrent.minimum} A, Avg ${agg.waterPumpCurrent.average} A
+  * Historical Voltage: Max ${agg.waterPumpVoltage.maximum} V, Min ${agg.waterPumpVoltage.minimum} V
+  * Energy Consumed: ${agg.unitConsumptionKWh.pump_kWh} Units (kWh)
+- Total Recorded Consumption: ${agg.unitConsumptionKWh.total_kWh} Units (kWh) across ${agg.bucketsCount} minute buckets
+- Active KSEB Slab: ${dom?.slabType || 'Telescopic (≤250 Units)'}
+- KSEB Bill Breakdown:
+  * Energy Charge: ₹${dom?.energyCharge || 0}
+  * Fixed Charge: ₹${dom?.fixedCharge || 50}
+  * Electricity Duty (5%): ₹${dom?.duty || 0}
+  * Meter Rent: ₹${dom?.meterRent || 6}
+  * FAC Charge: ₹${dom?.fac || 0}
+  * Total KSEB Bill: ₹${dom?.totalBill || 0}
+- 30-Day Monthly Projection:
+  * Projected Monthly Units: ${kseb?.monthlyProjection?.projectedUnits || 0} Units
+  * Projected Monthly Bill: ₹${kseb?.monthlyProjection?.projectedBillINR || 0} (${kseb?.monthlyProjection?.slab})
 
-2. WATER PUMP MOTOR:
-   - Live Current: ${telemetry.live.waterPumpCurrent} A | Status: ${telemetry.waterPump?.status}
-   - Live Voltage: ${telemetry.live.waterPumpVoltage} V | Instant Power: ${telemetry.waterPump?.instantPowerWatts} W
-   - Historical Aggregates (${agg.bucketsCount} minute buckets, ${agg.totalSamples} samples):
-     * Maximum Peak Current: ${agg.waterPumpCurrent.maximum} A
-     * Minimum Current: ${agg.waterPumpCurrent.minimum} A
-     * Average Current: ${agg.waterPumpCurrent.average} A
-     * Voltage: Max ${agg.waterPumpVoltage.maximum} V, Min ${agg.waterPumpVoltage.minimum} V, Avg ${agg.waterPumpVoltage.average} V
-   - Energy Consumed: ${agg.unitConsumptionKWh.pump_kWh} Units (kWh)
-   - Estimated Cost: ₹${agg.costINR.pump_inr}
-
-3. FACILITY OVERVIEW:
-   - Total Units Consumed: ${overview.totalUnitsKWh} Units (kWh)
-   - Total Cost: ₹${overview.totalCostINR} (at ₹${INR_RATE_PER_UNIT}/Unit)
-   - Overall Health Score: ${overview.healthScore}%
-   - Total Instant Load: ${overview.totalPowerWatts} W
-   - Last Sync: ${telemetry.lastUpdated}
-
-RESPONSE GUIDELINES:
-- When calculating electricity cost or monthly projection, calculate in ₹ (INR): (Units * ₹8.00).
-- Present clear structured summaries with markdown tables, bold values, and concise engineering recommendations.`;
+DIRECTIVES:
+- ALWAYS calculate and display bills in INDIAN RUPEES (₹) adhering to KSEB's telescopic/non-telescopic rules.
+- Clearly present itemized bill breakdowns (Energy Charge, 5% Duty, Fixed Charge, FAC, Meter Rent).
+- Warn when consumption approaches or crosses 250 units because non-telescopic flat re-rating significantly increases total billing!`;
 
   const clientApiKey = req.headers['x-groq-key'] || process.env.GROQ_API_KEY;
 
   if (!clientApiKey) {
     return res.status(200).json({
-      reply: `⚠️ **Groq API Key Required**\n\n**Live Telemetry (INR ₹):**\n- **LED:** \`${telemetry.live.ledCurrent} A\` | Max: \`${agg.ledCurrent.maximum} A\` | Cost: \`₹${agg.costINR.led_inr}\`\n- **Pump:** \`${telemetry.live.waterPumpCurrent} A\` | Max: \`${agg.waterPumpCurrent.maximum} A\` | Cost: \`₹${agg.costINR.pump_inr}\`\n- **Total Consumption:** \`${overview.totalUnitsKWh} Units (kWh)\` = **₹${overview.totalCostINR}**\n\nAdd your \`GROQ_API_KEY\` to chat.`
+      reply: `⚠️ **Groq API Key Required**\n\n**KSEB Domestic (LT-I) Telemetry Audit:**\n- **Total Units Consumed:** \`${agg.unitConsumptionKWh.total_kWh} Units (kWh)\`\n- **Active Slab:** ${dom?.slabType}\n- **Total KSEB Bill:** \`₹${dom?.totalBill}\` (Energy: ₹${dom?.energyCharge}, Fixed: ₹${dom?.fixedCharge}, Duty 5%: ₹${dom?.duty})\n- **30-Day Projected Bill:** \`₹${kseb?.monthlyProjection?.projectedBillINR}\` (${kseb?.monthlyProjection?.projectedUnits} Units)\n\nPlease configure your \`GROQ_API_KEY\` to chat.`
     });
   }
 
@@ -404,7 +567,7 @@ app.listen(PORT, () => {
   console.log(`===============================================`);
   console.log(`🚀 IoT & Groq Server running at: http://localhost:${PORT}`);
   console.log(`📡 Connected to Firebase: ${FIREBASE_DB_URL}`);
-  console.log(`🇮🇳 Currency configured: Indian Rupee (₹${INR_RATE_PER_UNIT}/Unit)`);
+  console.log(`⚡ KSEB 2026 Tariff Engine Active: Telescopic & Non-Telescopic`);
   console.log(`💡 ledCurrent & ledVoltage = LED Fixture`);
   console.log(`🚰 waterPumpCurrent & waterPumpVoltage = Water Pump`);
   console.log(`===============================================`);

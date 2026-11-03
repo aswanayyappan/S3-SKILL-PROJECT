@@ -27,9 +27,9 @@
       </div>
       
       <div class="header-actions">
-        <div class="inr-badge" title="Electricity Tariff Standard Rate in India">
-          <span class="currency-symbol">₹</span>
-          <span>Tariff: <strong>₹8.00 / Unit</strong></span>
+        <div class="inr-badge" title="KSEB 2026 Tariff Schedule Active">
+          <span class="currency-symbol">⚡</span>
+          <span>KSEB Tariff: <strong id="headerKsebSlab">Telescopic (≤250 Units)</strong></span>
         </div>
         <div class="db-badge" title="Connected to Firebase Realtime DB">
           <span class="db-indicator pulse-green"></span>
@@ -70,16 +70,16 @@
       <div class="kpi-card inr-kpi">
         <div class="kpi-icon kpi-inr">₹</div>
         <div class="kpi-details">
-          <span class="kpi-label">ESTIMATED ELECTRICITY COST</span>
+          <span class="kpi-label">KSEB BILL (LT-I DOMESTIC)</span>
           <div class="kpi-value"><span id="kpiTotalCostINR">₹0.00</span> <small>INR</small></div>
         </div>
       </div>
 
       <div class="kpi-card">
-        <div class="kpi-icon kpi-purple">🛡️</div>
+        <div class="kpi-icon kpi-purple">📅</div>
         <div class="kpi-details">
-          <span class="kpi-label">GRID HEALTH INDEX</span>
-          <div class="kpi-value"><span id="kpiHealthScore">100</span><small>%</small></div>
+          <span class="kpi-label">30-DAY MONTHLY ESTIMATE</span>
+          <div class="kpi-value"><span id="kpiMonthlyCostINR">₹0.00</span> <small id="kpiMonthlyUnits">0 U</small></div>
         </div>
       </div>
     </section>
@@ -285,10 +285,10 @@
 
         <!-- Suggested Prompt Chips -->
         <div class="prompt-chips">
-          <button class="chip" data-prompt="Calculate total electricity bill in Indian Rupees (₹) and project monthly cost.">🇮🇳 Calculate Bill in ₹ (INR)</button>
-          <button class="chip" data-prompt="What are the maximum peak values and surges recorded across minute aggregates?">⚡ Max Peaks & Surges</button>
-          <button class="chip" data-prompt="Give me a complete health and status report of the water pump and LED.">🩺 Health & Status Check</button>
-          <button class="chip" data-prompt="How many units (kWh) did the water pump consume vs the LED?">📊 Units (kWh) Breakdown</button>
+          <button class="chip" data-prompt="Give me the complete KSEB bill breakdown (Energy Charges, Fixed Charge, 5% Duty, Meter Rent, FAC).">⚡ KSEB Bill Breakdown</button>
+          <button class="chip" data-prompt="What happens if my consumption exceeds 250 units in KSEB? Explain non-telescopic re-rating.">⚠️ >250 Units Penalty</button>
+          <button class="chip" data-prompt="What is the 30-day projected KSEB electricity bill based on current usage?">📅 30-Day Bill Projection</button>
+          <button class="chip" data-prompt="Compare Domestic LT-I vs Commercial LT-VIIA tariff for this consumption.">🏢 Domestic vs Commercial</button>
         </div>
 
         <!-- Chat Input Form -->
