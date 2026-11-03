@@ -3,5 +3,6 @@ node_modules/
 .DS_Store
 *.log
 accumulator_state.json
+scratch/
 
 
