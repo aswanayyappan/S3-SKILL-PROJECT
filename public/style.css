@@ -242,12 +242,18 @@ body {
   display: grid;
   grid-template-columns: 1fr 1.05fr;
   gap: 24px;
-  align-items: stretch;
+  align-items: start;
 }
 
 @media (max-width: 1024px) {
   .main-layout {
     grid-template-columns: 1fr;
+  }
+
+  .chat-panel {
+    position: static;
+    height: 600px;
+    max-height: 80vh;
   }
 }
 
@@ -567,14 +573,15 @@ body {
   color: #fff;
 }
 
-/* Chat Panel */
+/* Chat Panel - Fixed/Sticky on viewport so you never have to scroll the whole page down */
 .chat-panel {
   display: flex;
   flex-direction: column;
-  height: 720px;
-  max-height: calc(100vh - 180px);
-  min-height: 580px;
-  position: relative;
+  height: calc(100vh - 210px);
+  min-height: 540px;
+  max-height: 820px;
+  position: sticky;
+  top: 20px;
   overflow: hidden;
 }
 
@@ -861,8 +868,17 @@ body {
   font-size: 0.75rem;
 }
 
-.btn-ghost:hover {
-  color: var(--text-primary);
+.mobile-chat-jump {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .mobile-chat-jump {
+    display: inline-flex;
+    text-decoration: none;
+    font-size: 0.78rem;
+    padding: 6px 12px;
+  }
 }
 
 /* Modal */
