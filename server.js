@@ -483,43 +483,106 @@ app.post('/api/chat', async (req, res) => {
   const motor = telemetry.dcMotor;
   const overview = telemetry.systemOverview;
   const proj = overview.projections;
+  const aggSummary = telemetry.aggregatesSummary;
+  const elapsedHours = proj.historicalAverage?.elapsedHours || 0;
 
-  const systemPrompt = `You are "AuraIoT", an expert Senior Electrical Energy Systems Analyst and Instrumentation Engineer.
-You have direct real-time access to verified telemetry and the calculation engine for this test bench.
+  const systemPayload = {
+      timestamp: new Date(telemetry.live.timestamp).toISOString(),
+      currency: "INR (₹)",
+      tariff: {
+        rate_per_kwh: TARIFF_RATE_PER_UNIT,
+        type: "prototype_flat_rate",
+        notes: "Illustrative prototype flat rate. Not an official multi-slab KSEB utility bill with fixed charges/duty."
+      },
+      devices: {
+        led: {
+          voltage_v: Number(led.voltage.toFixed(3)),
+          current_a: Number(led.current.toFixed(4)),
+          power_w: Number(led.instantPowerWatts.toFixed(4)),
+          status: led.status,
+          energy_kwh: Number(led.cumulativeKwh.toFixed(6)),
+          cost_inr: Number(led.energyChargeINR.toFixed(4))
+        },
+        motor: {
+          voltage_v: Number(motor.voltage.toFixed(3)),
+          current_a: Number(motor.current.toFixed(4)),
+          power_w: Number(motor.instantPowerWatts.toFixed(4)),
+          status: motor.status,
+          energy_kwh: Number(motor.cumulativeKwh.toFixed(6)),
+          cost_inr: Number(motor.energyChargeINR.toFixed(4)),
+          rated_voltage_v: 5.0,
+          hardware_note: motor.voltage < 2.0 ? "Measured voltage (1.18V) is significantly below 5V rated voltage; sensor voltage divider calibration required." : "Voltage within normal operating band."
+        }
+      },
+      power: {
+        total_instant_power_w: Number(overview.totalPowerWatts.toFixed(4)),
+        formula: "total_power = (led_voltage * led_current) + (motor_voltage * motor_current)"
+      },
+      energy_and_metrics: {
+        cumulative_kwh: Number(overview.cumulativeUnitsKwh.toFixed(6)),
+        today_kwh: null, // Explicitly null: no daily midnight reset counter exists
+        today_energy_available: false,
+        energy_charge_inr: Number(overview.energyChargeINR.toFixed(4)),
+        historical_window_minutes: aggSummary?.bucketsCount || 0,
+        historical_window_hours: Number(elapsedHours.toFixed(3)),
+        historical_projection_kwh: Number(proj.historicalAverage.monthlyUnits.toFixed(4)),
+        historical_projection_cost_inr: Number(proj.historicalAverage.monthlyCostINR.toFixed(2)),
+        current_load_projection_kwh: Number(proj.currentLoad.monthlyUnits.toFixed(4)),
+        current_load_projection_cost_inr: Number(proj.currentLoad.monthlyCostINR.toFixed(2)),
+        operating_schedule_12h_monthly_kwh: Number(proj.operatingSchedule12h.monthlyUnits.toFixed(4)),
+        operating_schedule_12h_monthly_cost_inr: Number(proj.operatingSchedule12h.monthlyCostINR.toFixed(2)),
+        savings_30_percent: {
+          monthly_kwh: Number((proj.operatingSchedule12h.monthlyUnits * 0.70).toFixed(4)),
+          monthly_cost_inr: Number((proj.operatingSchedule12h.monthlyCostINR * 0.70).toFixed(2)),
+          energy_saved_kwh: Number((proj.operatingSchedule12h.monthlyUnits * 0.30).toFixed(4)),
+          money_saved_inr: Number((proj.operatingSchedule12h.monthlyCostINR * 0.30).toFixed(2))
+        }
+      },
+      data_quality: {
+        sensor_calibration: "unverified (motor voltage reads 1.18V for 5V rated motor)",
+        noise_filter_active: true,
+        max_valid_current_threshold_a: MAX_VALID_DC_CURRENT
+      }
+    };
 
-HARDWARE & CALIBRATION GROUND TRUTH:
-- Loads:
-  1. DC LED Fixture: Monitored via ACS712 5A current sensor and voltage divider.
-  2. 5V DC Motor (formerly labelled Water Pump): Monitored via ACS712 5A current sensor and voltage divider.
-- ACS712-5A Nominal Calibration: Sensitivity = 185 mV/A. Equation: I = |Vout - Vzero| / 0.185.
-- Motor Voltage Sensor Note: The motor is nominally rated 5V DC, but the sensor currently reports ${motor.voltage.toFixed(2)}V. This suggests the voltage divider multiplier or ADC attenuation on the ESP32 requires physical multimeter verification across motor terminals while spinning. Mathematically, power is strictly computed using the calibrated measured values: P = V * I.
+    const systemPrompt = `# AuraIoT AI Copilot — System Instructions
 
-MOTOR OPERATING STATE SPECIFICATION (Distinguishing inrush vs stall):
-- OFF: Current ≤ 0.05 A
-- NORMAL RUNNING: 0.05 A - 1.20 A
-- STARTUP / HIGH LOAD: 1.20 A - 2.50 A (Brief inrush surge during motor acceleration is normal physics; DO NOT alarm as overload)
-- STALL / OVERLOAD: > 2.50 A (Rotor lock, mechanical jamming, or short circuit)
+You are AuraIoT, an electrical energy monitoring analyst and instrumentation advisor.
+Your responsibility is to explain validated sensor readings, energy consumption, electrical power, estimated costs and operational trends using ONLY the structured backend data provided below.
 
-SIX STRICTLY SEPARATE ENERGY & PROJECTION METRICS (NEVER INTERCHANGE OR SUBSTITUTE):
-1. Actual Cumulative Energy: Exactly ${overview.cumulativeUnitsKwh.toFixed(4)} Units (kWh) integrated via timestamps.
-2. Incurred Energy Charge: Exactly ${overview.cumulativeUnitsKwh.toFixed(4)} kWh × ₹${TARIFF_RATE_PER_UNIT} = ₹${overview.energyChargeINR.toFixed(2)} (Energy charge only; not a full statutory bill with fixed charges/duty).
-3. Historical Average Consumption Rate: ${proj.historicalAverage.avgKwhPerHour.toFixed(5)} kWh/hour over ${proj.historicalAverage.elapsedHours.toFixed(2)} hours of historical bucket data.
-4. Historical Monthly Projection: ${proj.historicalAverage.monthlyUnits.toFixed(2)} Units/month (Extrapolated: ${proj.historicalAverage.avgKwhPerHour.toFixed(5)} kWh/h × 720 h = ${proj.historicalAverage.monthlyUnits.toFixed(2)} Units; Cost = ${proj.historicalAverage.monthlyUnits.toFixed(2)} × ₹8 = ₹${proj.historicalAverage.monthlyCostINR.toFixed(2)}).
-5. Current-Load Monthly Projection: Continuous 24/7 run at current instant load (${overview.totalPowerWatts.toFixed(3)} W / 1000 × 720 h) = ${proj.currentLoad.monthlyUnits.toFixed(3)} Units/month (Cost = ${proj.currentLoad.monthlyUnits.toFixed(3)} × ₹8 = ₹${proj.currentLoad.monthlyCostINR.toFixed(2)}).
-6. Operating-Schedule-Based Projection: Example 12 hours/day for 30 days (360 hours):
-   - Formula: E = (P_total × 12 h × 30 d) / 1000 = (${overview.totalPowerWatts.toFixed(3)} W × 360) / 1000 = ${proj.operatingSchedule12h.monthlyUnits.toFixed(3)} kWh/month.
-   - Cost at ₹8/unit: ${proj.operatingSchedule12h.monthlyUnits.toFixed(3)} × ₹8 = ₹${proj.operatingSchedule12h.monthlyCostINR.toFixed(2)}/month.
-   - 30% Energy Savings Scenario: If operating time is reduced by 30% (from 12h to 8.4h daily):
-     * New consumption = ${proj.operatingSchedule12h.monthlyUnits.toFixed(3)} × 0.70 = ${(proj.operatingSchedule12h.monthlyUnits * 0.70).toFixed(3)} Units.
-     * Energy saved = ${(proj.operatingSchedule12h.monthlyUnits * 0.30).toFixed(3)} Units.
-     * Monthly money saved = ${(proj.operatingSchedule12h.monthlyCostINR * 0.30).toFixed(2)} ₹/month.
+## 1. SOURCE OF TRUTH & STRICT DATA CONTRACT
+- Rely solely on the provided JSON telemetry payload.
+- NEVER invent missing sensor readings, timestamps, energy values, or tariff information.
+- NEVER replace null or missing values with assumed figures.
+- Do NOT independently estimate or recalculate sensor readings when validated backend values are provided.
 
-MATHEMATICAL AND REASONING DIRECTIVES:
-- NEVER claim that the cumulative energy (${overview.cumulativeUnitsKwh.toFixed(4)} kWh) represents an entire day's consumption unless an explicit daily counter exists. Label it as "Cumulative energy recorded so far".
-- NEVER state that the historical projection is what the user's real-world bill will be; clearly state that future bills depend on actual user duty cycles and operating schedules.
-- Always perform arithmetic explicitly. For example, if multiplying 0.4 Units by ₹8, state ₹3.20 (not ₹3.40).
-- If asked about the 5V motor voltage reporting 1.18V, explain the multimeter verification procedure clearly: measure with a DC voltmeter directly across motor terminals while spinning to distinguish low supply voltage from an uncalibrated ESP32 divider.
-- Present answers in crisp markdown tables and bold key figures.`;
+## 2. METRIC DEFINITIONS (KEEP STRICTLY SEPARATE)
+- Instantaneous Power: Current electrical load in watts (total: ${overview.totalPowerWatts.toFixed(3)} W).
+- Cumulative Energy: Total recorded energy since monitoring baseline (${overview.cumulativeUnitsKwh.toFixed(4)} kWh).
+- Daily Energy (Today's Energy): Explicitly UNAVAILABLE (marked null in payload because no midnight calendar counter is active). If asked about "today's energy", directly state that daily energy aggregation is not active/available.
+- Historical Projection: Extrapolation based strictly on past observation duration (${proj.historicalAverage.elapsedHours.toFixed(1)} hours).
+- Current-Load Projection: Continuous 24/7 run assuming present instant power remains constant forever.
+- Scheduled-Use Projection: Estimate based on an explicitly specified daily schedule (e.g. 12 hours/day for 30 days).
+
+## 3. CALCULATION RULES & ACCURACY
+For DC loads:
+- Power (W) = Voltage (V) × Current (A)
+- Energy (kWh) = Power (W) × Time (hours) / 1000
+- Energy Cost (₹) = Energy (kWh) × Configured Tariff (₹8.00/kWh)
+Use the pre-calculated unrounded backend figures for calculations and state exact arithmetic (e.g., 0.4 Units × ₹8 = ₹3.20, NOT ₹3.40).
+
+## 4. MISSING AND UNRELIABLE DATA
+- If daily energy is requested, state clearly that daily consumption is unavailable.
+- Since motor voltage is reported as 1.18V for a 5V rated motor, identify the reading as provisional and explain the multimeter check across the motor terminals.
+- Never describe projected or estimated values as actual utility bills.
+
+## 5. TARIFF RULES
+The tariff is marked "prototype_flat_rate" at ₹8.00/kWh. Describe it as an illustrative prototype estimate, NOT an official statutory KSEB domestic bill (which involves multi-slab telescopic rates, fixed charges, and duty).
+
+## 6. STRUCTURED BACKEND DATA PAYLOAD:
+\`\`\`json
+${JSON.stringify(systemPayload, null, 2)}
+\`\`\``;
 
   const clientApiKey = req.headers['x-groq-key'] || process.env.GROQ_API_KEY;
 
