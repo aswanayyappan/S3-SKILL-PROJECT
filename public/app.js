@@ -1,29 +1,40 @@
-// AuraIoT Frontend Logic
+// AuraIoT Frontend Logic - Indian Rupee & Executive MVP Dashboard
 
 let chatHistory = [];
 let localGroqKey = localStorage.getItem('groq_api_key') || '';
 
-// DOM Elements
+// KPI Elements
+const kpiTotalPower = document.getElementById('kpiTotalPower');
+const kpiTotalUnits = document.getElementById('kpiTotalUnits');
+const kpiTotalCostINR = document.getElementById('kpiTotalCostINR');
+const kpiHealthScore = document.getElementById('kpiHealthScore');
+
+// LED Card Elements
 const ledCurrentVal = document.getElementById('ledCurrentVal');
+const ledVoltageVal = document.getElementById('ledVoltageVal');
 const ledPowerVal = document.getElementById('ledPowerVal');
 const ledStatusBadge = document.getElementById('ledStatusBadge');
 const ledCurrentMeter = document.getElementById('ledCurrentMeter');
 const ledMaxVal = document.getElementById('ledMaxVal');
 const ledAvgVal = document.getElementById('ledAvgVal');
-const ledKwhVal = document.getElementById('ledKwhVal');
+const ledMinVal = document.getElementById('ledMinVal');
+const ledCostINRVal = document.getElementById('ledCostINRVal');
 
+// Pump Card Elements
 const pumpVoltageVal = document.getElementById('pumpVoltageVal');
 const pumpCurrentVal = document.getElementById('pumpCurrentVal');
 const pumpPowerVal = document.getElementById('pumpPowerVal');
 const pumpStatusBadge = document.getElementById('pumpStatusBadge');
 const pumpCurrentMeter = document.getElementById('pumpCurrentMeter');
 const pumpMaxVal = document.getElementById('pumpMaxVal');
-const pumpMaxVoltVal = document.getElementById('pumpMaxVoltVal');
-const pumpKwhVal = document.getElementById('pumpKwhVal');
+const pumpAvgVal = document.getElementById('pumpAvgVal');
+const pumpMinVal = document.getElementById('pumpMinVal');
+const pumpCostINRVal = document.getElementById('pumpCostINRVal');
 
 const lastUpdated = document.getElementById('lastUpdated');
 const refreshBtn = document.getElementById('refreshBtn');
 
+// Chat Elements
 const chatMessages = document.getElementById('chatMessages');
 const chatForm = document.getElementById('chatForm');
 const chatInput = document.getElementById('chatInput');
@@ -43,7 +54,6 @@ const closeModalBtn = document.getElementById('closeModalBtn');
 const customGroqKey = document.getElementById('customGroqKey');
 const saveKeyBtn = document.getElementById('saveKeyBtn');
 
-// Initialize API Key input if present
 if (localGroqKey) {
   customGroqKey.value = localGroqKey;
 }
@@ -62,19 +72,26 @@ async function fetchTelemetry() {
   }
 }
 
-// Update Dashboard UI with latest sensor numbers
+// Update Dashboard UI with latest sensor numbers & INR calculations
 function updateUI(data) {
   const live = data.live || {};
-  const c1 = parseFloat(live.ledCurrent ?? live.current1 ?? data.led?.current ?? 0);
-  const c2 = parseFloat(live.waterPumpCurrent ?? live.current2 ?? data.waterPump?.current ?? 0);
-  const v1 = parseFloat(live.ledVoltage ?? live.voltage1 ?? data.led?.voltage ?? 0);
-  const v2 = parseFloat(live.waterPumpVoltage ?? live.voltage2 ?? data.waterPump?.voltage ?? 0);
+  const c1 = parseFloat(live.ledCurrent ?? data.led?.current ?? 0);
+  const c2 = parseFloat(live.waterPumpCurrent ?? data.waterPump?.current ?? 0);
+  const v1 = parseFloat(live.ledVoltage ?? data.led?.voltage ?? 0);
+  const v2 = parseFloat(live.waterPumpVoltage ?? data.waterPump?.voltage ?? 0);
 
   const pLed = data.led?.instantPowerWatts ?? (c1 * (v1 > 1 ? v1 : 12));
   const pPump = data.waterPump?.instantPowerWatts ?? (c2 * (v2 > 50 ? v2 : 230));
 
+  // Executive KPI Strip
+  if (kpiTotalPower) kpiTotalPower.textContent = (pLed + pPump).toFixed(1);
+  if (kpiTotalUnits) kpiTotalUnits.textContent = (data.systemOverview?.totalUnitsKWh ?? data.aggregatesSummary?.unitConsumptionKWh?.total_kWh ?? 0).toFixed(4);
+  if (kpiTotalCostINR) kpiTotalCostINR.textContent = `₹${(data.systemOverview?.totalCostINR ?? data.aggregatesSummary?.costINR?.total_inr ?? 0).toFixed(2)}`;
+  if (kpiHealthScore) kpiHealthScore.textContent = data.systemOverview?.healthScore ?? 100;
+
   // LED Updates (ledCurrent)
   ledCurrentVal.textContent = c1.toFixed(3);
+  if (ledVoltageVal) ledVoltageVal.textContent = v1.toFixed(2);
   ledPowerVal.textContent = pLed.toFixed(2);
   const isLedOn = data.led?.status === 'ON' || c1 > 0.05;
   ledStatusBadge.textContent = isLedOn ? 'ON' : 'OFF';
@@ -84,12 +101,13 @@ function updateUI(data) {
   const ledPercent = Math.min(Math.max((c1 / 1.0) * 100, 0), 100);
   ledCurrentMeter.style.width = `${ledPercent}%`;
 
-  // LED Statistics & Units
+  // LED Statistical Aggregates & Cost
   const ledStats = data.led?.stats || data.aggregatesSummary?.ledCurrent;
   if (ledStats) {
-    if (ledMaxVal) ledMaxVal.textContent = `${ledStats.maximum ?? ledStats.max} A`;
-    if (ledAvgVal) ledAvgVal.textContent = `${ledStats.average ?? ledStats.avg} A`;
-    if (ledKwhVal) ledKwhVal.textContent = `${data.led?.energyKWh ?? data.aggregatesSummary?.unitConsumptionKWh?.led_kWh ?? 0} kWh`;
+    if (ledMaxVal) ledMaxVal.textContent = `${(ledStats.maximum ?? 0).toFixed(3)} A`;
+    if (ledAvgVal) ledAvgVal.textContent = `${(ledStats.average ?? 0).toFixed(3)} A`;
+    if (ledMinVal) ledMinVal.textContent = `${(ledStats.minimum ?? 0).toFixed(3)} A`;
+    if (ledCostINRVal) ledCostINRVal.textContent = `₹${(data.led?.costINR ?? data.aggregatesSummary?.costINR?.led_inr ?? 0).toFixed(2)}`;
   }
 
   // Water Pump Updates (waterPumpCurrent & waterPumpVoltage)
@@ -104,22 +122,22 @@ function updateUI(data) {
   const pumpPercent = Math.min(Math.max((c2 / 1.0) * 100, 0), 100);
   pumpCurrentMeter.style.width = `${pumpPercent}%`;
 
-  // Pump Statistics & Units
+  // Pump Statistical Aggregates & Cost
   const pumpStats = data.waterPump?.stats || data.aggregatesSummary?.waterPumpCurrent;
-  const pumpVoltStats = data.waterPump?.voltageStats || data.aggregatesSummary?.waterPumpVoltage;
   if (pumpStats) {
-    if (pumpMaxVal) pumpMaxVal.textContent = `${pumpStats.maximum ?? pumpStats.max} A`;
-    if (pumpMaxVoltVal) pumpMaxVoltVal.textContent = `${pumpVoltStats?.maximum ?? pumpVoltStats?.max ?? v2} V`;
-    if (pumpKwhVal) pumpKwhVal.textContent = `${data.waterPump?.energyKWh ?? data.aggregatesSummary?.unitConsumptionKWh?.pump_kWh ?? 0} kWh`;
+    if (pumpMaxVal) pumpMaxVal.textContent = `${(pumpStats.maximum ?? 0).toFixed(3)} A`;
+    if (pumpAvgVal) pumpAvgVal.textContent = `${(pumpStats.average ?? 0).toFixed(3)} A`;
+    if (pumpMinVal) pumpMinVal.textContent = `${(pumpStats.minimum ?? 0).toFixed(3)} A`;
+    if (pumpCostINRVal) pumpCostINRVal.textContent = `₹${(data.waterPump?.costINR ?? data.aggregatesSummary?.costINR?.pump_inr ?? 0).toFixed(2)}`;
   }
 
-  // Timestamp & Total Unit Stats
+  // Timestamp & Status
   const date = data.lastUpdated ? new Date(data.lastUpdated) : new Date();
-  const totalUnits = data.aggregatesSummary?.unitConsumptionKWh?.total_kWh ?? data.statsSummary?.unitConsumptionKWh?.total_kWh ?? '--';
-  lastUpdated.textContent = `Sync: ${date.toLocaleTimeString()} | Total Units: ${totalUnits} kWh`;
+  const buckets = data.aggregatesSummary?.bucketsCount ?? '--';
+  lastUpdated.textContent = `Sync: ${date.toLocaleTimeString()} | ${buckets} Minute Buckets`;
 }
 
-// Send Simulator update
+// Simulator Trigger
 applySimBtn.addEventListener('click', async () => {
   const c1 = parseFloat(simC1.value) || 0;
   const c2 = parseFloat(simC2.value) || 0;
@@ -140,7 +158,7 @@ applySimBtn.addEventListener('click', async () => {
   }
 });
 
-// Preset scenario buttons
+// Preset buttons
 document.querySelectorAll('.preset-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     simC1.value = btn.dataset.c1;
@@ -150,7 +168,7 @@ document.querySelectorAll('.preset-btn').forEach(btn => {
   });
 });
 
-// Chat Append Message Helper
+// Append Message to Chat
 function appendMessage(role, text) {
   const msgEl = document.createElement('div');
   msgEl.className = `message message-${role}`;
@@ -159,7 +177,6 @@ function appendMessage(role, text) {
   bubble.className = 'message-bubble';
   
   if (role === 'ai') {
-    // Render markdown using marked
     bubble.innerHTML = window.marked ? marked.parse(text) : text;
   } else {
     bubble.textContent = text;
@@ -177,7 +194,7 @@ function appendMessage(role, text) {
   return bubble;
 }
 
-// Handle Chat Submission
+// Chat Submission
 chatForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const userText = chatInput.value.trim();
@@ -186,8 +203,7 @@ chatForm.addEventListener('submit', async (e) => {
   chatInput.value = '';
   appendMessage('user', userText);
 
-  // Add temporary loading indicator
-  const loadingBubble = appendMessage('ai', 'Thinking and inspecting telemetry...');
+  const loadingBubble = appendMessage('ai', 'Thinking and inspecting telemetry with Indian Rupee calculations...');
   sendBtn.disabled = true;
 
   try {
@@ -213,7 +229,6 @@ chatForm.addEventListener('submit', async (e) => {
     const aiReply = data.reply || 'No response received.';
     loadingBubble.innerHTML = window.marked ? marked.parse(aiReply) : aiReply;
 
-    // Track history
     chatHistory.push({ role: 'user', content: userText });
     chatHistory.push({ role: 'assistant', content: aiReply });
   } catch (err) {
@@ -224,7 +239,7 @@ chatForm.addEventListener('submit', async (e) => {
   }
 });
 
-// Chip prompt click handler
+// Prompt Chips
 document.querySelectorAll('.prompt-chips .chip').forEach(chip => {
   chip.addEventListener('click', () => {
     chatInput.value = chip.dataset.prompt;
@@ -232,14 +247,12 @@ document.querySelectorAll('.prompt-chips .chip').forEach(chip => {
   });
 });
 
-// Clear Chat History
 clearChatBtn.addEventListener('click', () => {
   chatMessages.innerHTML = '';
   chatHistory = [];
-  appendMessage('ai', 'Chat history cleared. How can I assist you with the LED and Water Pump telemetry?');
+  appendMessage('ai', 'Chat history cleared. How can I help you analyze the energy data in Indian Rupees (₹)?');
 });
 
-// API Key Modal Controls
 apiKeyBtn.addEventListener('click', () => keyModal.classList.add('open'));
 closeModalBtn.addEventListener('click', () => keyModal.classList.remove('open'));
 keyModal.addEventListener('click', (e) => {
@@ -251,12 +264,11 @@ saveKeyBtn.addEventListener('click', () => {
   localGroqKey = key;
   localStorage.setItem('groq_api_key', key);
   keyModal.classList.remove('open');
-  appendMessage('ai', key ? '✅ Groq API key saved! You are now connected to Groq Llama 3.' : 'ℹ️ Groq API key removed.');
+  appendMessage('ai', key ? '✅ Groq API key saved! Ready to analyze telemetry in INR (₹).' : 'ℹ️ Groq API key removed.');
 });
 
 refreshBtn.addEventListener('click', fetchTelemetry);
 
-// Initial Telemetry Fetch & Periodic 3-second Auto-refresh
+// Initial Telemetry Fetch & 3-sec interval
 fetchTelemetry();
 setInterval(fetchTelemetry, 3000);
-

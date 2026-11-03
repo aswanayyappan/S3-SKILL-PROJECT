@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IoT Telemetry & Groq AI Assistant</title>
+  <title>AuraIoT - Smart Facility Telemetry & AI Copilot</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -22,16 +22,20 @@
         </div>
         <div>
           <h1>AuraIoT <span class="badge-live">LIVE</span></h1>
-          <p class="subtitle">Firebase RTDB &bull; Groq AI Intelligence Hub</p>
+          <p class="subtitle">Smart Energy Monitoring &bull; Firebase RTDB &bull; Groq AI</p>
         </div>
       </div>
       
       <div class="header-actions">
-        <div class="db-badge" title="Firebase Database Endpoint">
+        <div class="inr-badge" title="Electricity Tariff Standard Rate in India">
+          <span class="currency-symbol">₹</span>
+          <span>Tariff: <strong>₹8.00 / Unit</strong></span>
+        </div>
+        <div class="db-badge" title="Connected to Firebase Realtime DB">
           <span class="db-indicator pulse-green"></span>
           <span>s3-skills-default-rtdb</span>
         </div>
-        <button id="apiKeyBtn" class="btn btn-secondary">
+        <button id="apiKeyBtn" class="btn btn-secondary" title="Set Groq API Key">
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
             <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
           </svg>
@@ -45,12 +49,47 @@
       </div>
     </header>
 
+    <!-- KPI Metric Strip (MVP / Prototype Executive Summary) -->
+    <section class="kpi-strip">
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-blue">⚡</div>
+        <div class="kpi-details">
+          <span class="kpi-label">TOTAL INSTANT LOAD</span>
+          <div class="kpi-value"><span id="kpiTotalPower">0.0</span> <small>W</small></div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-green">📊</div>
+        <div class="kpi-details">
+          <span class="kpi-label">CUMULATIVE UNITS (kWh)</span>
+          <div class="kpi-value"><span id="kpiTotalUnits">0.0000</span> <small>Units</small></div>
+        </div>
+      </div>
+
+      <div class="kpi-card inr-kpi">
+        <div class="kpi-icon kpi-inr">₹</div>
+        <div class="kpi-details">
+          <span class="kpi-label">ESTIMATED ELECTRICITY COST</span>
+          <div class="kpi-value"><span id="kpiTotalCostINR">₹0.00</span> <small>INR</small></div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-purple">🛡️</div>
+        <div class="kpi-details">
+          <span class="kpi-label">GRID HEALTH INDEX</span>
+          <div class="kpi-value"><span id="kpiHealthScore">100</span><small>%</small></div>
+        </div>
+      </div>
+    </section>
+
     <!-- Main Content Grid -->
     <main class="main-layout">
       <!-- Left Panel: Telemetry & Controls -->
       <section class="telemetry-panel">
         <div class="section-title">
-          <h2>Telemetry Overview</h2>
+          <h2>Device Telemetry & Statistical Aggregates</h2>
           <span id="lastUpdated" class="last-sync">Syncing...</span>
         </div>
 
@@ -65,22 +104,30 @@
               </div>
               <div class="card-title-group">
                 <h3>LED Fixture</h3>
-                <span class="device-tag">Monitored via Current 1</span>
+                <span class="device-tag">Field: <code>ledCurrent</code> &bull; <code>ledVoltage</code></span>
               </div>
               <span id="ledStatusBadge" class="status-pill status-off">OFF</span>
             </div>
 
-            <div class="metric-container">
+            <div class="metric-container grid-3">
               <div class="metric-block">
-                <span class="metric-label">CURRENT (ONE)</span>
+                <span class="metric-label">CURRENT (A)</span>
                 <div class="metric-value-wrap">
-                  <span id="ledCurrentVal" class="metric-val">0.00</span>
+                  <span id="ledCurrentVal" class="metric-val">0.000</span>
                   <span class="metric-unit">A</span>
                 </div>
               </div>
 
               <div class="metric-block">
-                <span class="metric-label">CALCULATED POWER</span>
+                <span class="metric-label">VOLTAGE (V)</span>
+                <div class="metric-value-wrap">
+                  <span id="ledVoltageVal" class="metric-val">0.00</span>
+                  <span class="metric-unit">V</span>
+                </div>
+              </div>
+
+              <div class="metric-block">
+                <span class="metric-label">INSTANT LOAD</span>
                 <div class="metric-value-wrap">
                   <span id="ledPowerVal" class="metric-val">0.0</span>
                   <span class="metric-unit">W</span>
@@ -101,7 +148,8 @@
             <div class="stats-row">
               <div class="stat-pill"><span>Max Peak:</span> <strong id="ledMaxVal">-- A</strong></div>
               <div class="stat-pill"><span>Avg:</span> <strong id="ledAvgVal">-- A</strong></div>
-              <div class="stat-pill"><span>Units Consumed:</span> <strong id="ledKwhVal">-- kWh</strong></div>
+              <div class="stat-pill"><span>Min:</span> <strong id="ledMinVal">-- A</strong></div>
+              <div class="stat-pill inr-pill"><span>Cost:</span> <strong id="ledCostINRVal">₹0.00</strong></div>
             </div>
           </div>
 
@@ -116,25 +164,25 @@
               </div>
               <div class="card-title-group">
                 <h3>Water Pump Motor</h3>
-                <span class="device-tag">Monitored via Current 2 & Voltage 2</span>
+                <span class="device-tag">Field: <code>waterPumpCurrent</code> &bull; <code>waterPumpVoltage</code></span>
               </div>
               <span id="pumpStatusBadge" class="status-pill status-idle">IDLE</span>
             </div>
 
             <div class="metric-container grid-3">
               <div class="metric-block">
-                <span class="metric-label">VOLTAGE (TWO)</span>
+                <span class="metric-label">CURRENT (A)</span>
                 <div class="metric-value-wrap">
-                  <span id="pumpVoltageVal" class="metric-val">0.0</span>
-                  <span class="metric-unit">V</span>
+                  <span id="pumpCurrentVal" class="metric-val">0.000</span>
+                  <span class="metric-unit">A</span>
                 </div>
               </div>
 
               <div class="metric-block">
-                <span class="metric-label">CURRENT (TWO)</span>
+                <span class="metric-label">VOLTAGE (V)</span>
                 <div class="metric-value-wrap">
-                  <span id="pumpCurrentVal" class="metric-val">0.00</span>
-                  <span class="metric-unit">A</span>
+                  <span id="pumpVoltageVal" class="metric-val">0.00</span>
+                  <span class="metric-unit">V</span>
                 </div>
               </div>
 
@@ -152,48 +200,49 @@
             </div>
             <div class="meter-legend">
               <span>0.0 A</span>
-              <span>Normal (4.5A - 230V)</span>
-              <span>10.0 A</span>
+              <span>Normal Operation</span>
+              <span>1.0 A</span>
             </div>
 
             <!-- Statistical Breakdown for Pump -->
             <div class="stats-row">
               <div class="stat-pill"><span>Max Peak:</span> <strong id="pumpMaxVal">-- A</strong></div>
-              <div class="stat-pill"><span>Max Volt:</span> <strong id="pumpMaxVoltVal">-- V</strong></div>
-              <div class="stat-pill"><span>Units Consumed:</span> <strong id="pumpKwhVal">-- kWh</strong></div>
+              <div class="stat-pill"><span>Avg:</span> <strong id="pumpAvgVal">-- A</strong></div>
+              <div class="stat-pill"><span>Min:</span> <strong id="pumpMinVal">-- A</strong></div>
+              <div class="stat-pill inr-pill"><span>Cost:</span> <strong id="pumpCostINRVal">₹0.00</strong></div>
             </div>
           </div>
         </div>
 
-        <!-- Simulator & Quick Test Controller -->
+        <!-- Telemetry Simulator & Stress Tester -->
         <div class="card sim-card">
           <div class="sim-header">
-            <h4>Telemetry Simulator & Testing Console</h4>
-            <span class="sim-help">Push custom values or test scenarios directly</span>
+            <h4>Live Prototype Simulator & Scenario Testing</h4>
+            <span class="sim-help">Push synthetic current/voltage to test real-time AI alerts and cost estimation</span>
           </div>
           
           <div class="sim-form">
             <div class="sim-input-group">
-              <label>Current 1 (LED - A)</label>
+              <label>LED Current (A)</label>
               <input type="number" id="simC1" step="0.05" value="0.45" min="0" max="5">
             </div>
             <div class="sim-input-group">
-              <label>Current 2 (Pump - A)</label>
-              <input type="number" id="simC2" step="0.1" value="5.2" min="0" max="25">
+              <label>Pump Current (A)</label>
+              <input type="number" id="simC2" step="0.05" value="0.25" min="0" max="25">
             </div>
             <div class="sim-input-group">
-              <label>Voltage 2 (Pump - V)</label>
-              <input type="number" id="simV2" step="1" value="230" min="0" max="300">
+              <label>Pump Voltage (V)</label>
+              <input type="number" id="simV2" step="0.5" value="1.18" min="0" max="300">
             </div>
-            <button id="applySimBtn" class="btn btn-primary">Push Update</button>
+            <button id="applySimBtn" class="btn btn-primary">Apply Update</button>
           </div>
 
           <div class="preset-buttons">
-            <span>Quick Scenarios:</span>
-            <button class="preset-btn" data-c1="0.0" data-c2="0.0" data-v2="230">All OFF</button>
-            <button class="preset-btn" data-c1="0.42" data-c2="0.0" data-v2="228">LED Only</button>
-            <button class="preset-btn" data-c1="0.45" data-c2="4.85" data-v2="232">Normal Running</button>
-            <button class="preset-btn" data-c1="0.45" data-c2="9.8" data-v2="210">Pump Overload Alert</button>
+            <span>Prototype Test Scenarios:</span>
+            <button class="preset-btn" data-c1="0.0" data-c2="0.0" data-v2="1.18">Standby / All OFF</button>
+            <button class="preset-btn" data-c1="0.38" data-c2="0.18" data-v2="1.18">Normal Running</button>
+            <button class="preset-btn" data-c1="0.95" data-c2="4.8" data-v2="228">Heavy Industrial Load</button>
+            <button class="preset-btn" data-c1="0.4" data-c2="8.5" data-v2="190">Pump Overload Alert</button>
           </div>
         </div>
       </section>
@@ -209,7 +258,7 @@
             </div>
             <div>
               <h3>AuraIoT AI Copilot</h3>
-              <p class="model-tag">Powered by Groq Llama 3.3 70B</p>
+              <p class="model-tag">Groq Llama / GPT-OSS &bull; Indian Rupee (₹) Energy Engine</p>
             </div>
           </div>
           <div class="chat-quick-actions">
@@ -221,13 +270,14 @@
         <div class="chat-messages" id="chatMessages">
           <div class="message message-ai">
             <div class="message-bubble">
-              <p>👋 Hello! I am your <strong>AuraIoT Telemetry Copilot</strong> connected to your live Firebase database.</p>
-              <p>I continuously inspect:</p>
+              <p>🙏 <strong>Namaste!</strong> I am your <strong>AuraIoT Energy & Telemetry Copilot</strong> connected live to your Firebase Realtime Database.</p>
+              <p>I track all real-time readings and minute-level statistical aggregates:</p>
               <ul>
-                <li><strong>Current One</strong>: LED Lighting System</li>
-                <li><strong>Current Two & Voltage Two</strong>: High-Power Water Pump</li>
+                <li><strong>LED Fixture:</strong> <code>ledCurrent</code> & <code>ledVoltage</code></li>
+                <li><strong>Water Pump:</strong> <code>waterPumpCurrent</code> & <code>waterPumpVoltage</code></li>
+                <li><strong>Billing Engine:</strong> Standard tariff calculated strictly in <strong>Indian Rupees (₹8.00/Unit)</strong>.</li>
               </ul>
-              <p>Ask me anything like: <em>"Is the pump safe?"</em>, <em>"How much energy are we consuming?"</em>, or <em>"Diagnose current anomalies"</em>.</p>
+              <p>Ask me about max peaks, surge detection, power consumption, or monthly electricity bill projections!</p>
             </div>
             <span class="msg-timestamp">Just now</span>
           </div>
@@ -235,10 +285,10 @@
 
         <!-- Suggested Prompt Chips -->
         <div class="prompt-chips">
-          <button class="chip" data-prompt="Show complete statistical report with max peaks, averages, and unit consumption.">📊 Statistical Max & Units</button>
-          <button class="chip" data-prompt="What are the maximum voltage and current surges observed in history?">⚡ Max Peaks & Surges</button>
-          <button class="chip" data-prompt="Calculate electricity units consumed (kWh) and estimated operating cost.">💰 Units (kWh) & Cost</button>
-          <button class="chip" data-prompt="What is the current status of the LED and the water pump?">Status summary?</button>
+          <button class="chip" data-prompt="Calculate total electricity bill in Indian Rupees (₹) and project monthly cost.">🇮🇳 Calculate Bill in ₹ (INR)</button>
+          <button class="chip" data-prompt="What are the maximum peak values and surges recorded across minute aggregates?">⚡ Max Peaks & Surges</button>
+          <button class="chip" data-prompt="Give me a complete health and status report of the water pump and LED.">🩺 Health & Status Check</button>
+          <button class="chip" data-prompt="How many units (kWh) did the water pump consume vs the LED?">📊 Units (kWh) Breakdown</button>
         </div>
 
         <!-- Chat Input Form -->
@@ -246,7 +296,7 @@
           <input 
             type="text" 
             id="chatInput" 
-            placeholder="Ask Groq AI about LED current or Water Pump status..." 
+            placeholder="Ask about LED current, pump load, peak surges or cost in ₹..." 
             autocomplete="off"
             required
           />
@@ -269,12 +319,12 @@
         <button id="closeModalBtn" class="btn-close">&times;</button>
       </div>
       <div class="modal-body">
-        <p>Enter your <strong>Groq API Key</strong> to chat directly with Groq's ultra-fast Llama 3 models. You can also save it in your project's <code>.env</code> file.</p>
+        <p>Enter your <strong>Groq API Key</strong> to chat directly with Groq's ultra-fast models. You can also save it in your project's <code>.env</code> file.</p>
         <div class="input-wrap">
           <label for="customGroqKey">Groq API Key (<code>gsk_...</code>)</label>
           <input type="password" id="customGroqKey" placeholder="gsk_..." />
         </div>
-        <p class="modal-hint">Key is saved securely in your browser's local storage and used for API requests.</p>
+        <p class="modal-hint">Key is saved securely in your browser's local storage.</p>
       </div>
       <div class="modal-footer">
         <button id="saveKeyBtn" class="btn btn-primary">Save Key</button>
@@ -285,4 +335,3 @@
   <script src="app.js"></script>
 </body>
 </html>
-

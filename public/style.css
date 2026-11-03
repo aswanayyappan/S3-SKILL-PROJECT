@@ -13,6 +13,7 @@
   --led-glow: rgba(56, 189, 248, 0.25);
   --pump-color: #10b981;
   --pump-glow: rgba(16, 185, 129, 0.25);
+  --inr-color: #f59e0b;
   --warn-color: #f59e0b;
   --danger-color: #ef4444;
 
@@ -45,7 +46,7 @@ body {
   padding: 24px 28px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 /* Header */
@@ -108,6 +109,24 @@ body {
   gap: 12px;
 }
 
+.inr-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.currency-symbol {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
 .db-badge {
   display: flex;
   align-items: center;
@@ -138,10 +157,90 @@ body {
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
+/* KPI Executive Strip */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .kpi-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 500px) {
+  .kpi-strip {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.kpi-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+
+.kpi-blue { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+.kpi-green { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.kpi-inr { background: rgba(245, 158, 11, 0.15); color: #fbbf24; font-weight: 800; font-size: 1.5rem; }
+.kpi-purple { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
+
+.kpi-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.kpi-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.kpi-value {
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.kpi-value small {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-weight: 600;
+}
+
+.inr-kpi .kpi-value {
+  color: #fbbf24;
+}
+
 /* Main Layout */
 .main-layout {
   display: grid;
-  grid-template-columns: 1fr 1.1fr;
+  grid-template-columns: 1fr 1.05fr;
   gap: 24px;
 }
 
@@ -235,6 +334,14 @@ body {
   color: var(--text-secondary);
 }
 
+.device-tag code {
+  background: var(--bg-input);
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  color: #38bdf8;
+}
+
 .status-pill {
   margin-left: auto;
   font-size: 0.72rem;
@@ -304,7 +411,7 @@ body {
 
 .metric-val {
   font-family: var(--font-mono);
-  font-size: 1.55rem;
+  font-size: 1.45rem;
   font-weight: 700;
   color: #fff;
 }
@@ -371,6 +478,15 @@ body {
 
 .pump-card .stat-pill strong {
   color: #10b981;
+}
+
+.stat-pill.inr-pill {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.stat-pill.inr-pill strong {
+  color: #fbbf24;
 }
 
 /* Simulator Console */
@@ -454,7 +570,7 @@ body {
 .chat-panel {
   display: flex;
   flex-direction: column;
-  height: 680px;
+  height: 700px;
 }
 
 .chat-header {
@@ -519,7 +635,7 @@ body {
 .message {
   display: flex;
   flex-direction: column;
-  max-width: 85%;
+  max-width: 88%;
 }
 
 .message-ai {
@@ -533,7 +649,7 @@ body {
 .message-bubble {
   padding: 14px 18px;
   border-radius: var(--radius-md);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   line-height: 1.55;
 }
 
@@ -541,6 +657,25 @@ body {
   background: rgba(30, 41, 69, 0.8);
   border: 1px solid var(--border);
   color: #e2e8f0;
+}
+
+.message-ai .message-bubble table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 0.82rem;
+}
+
+.message-ai .message-bubble th,
+.message-ai .message-bubble td {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.message-ai .message-bubble th {
+  background: rgba(15, 23, 42, 0.6);
+  color: #38bdf8;
 }
 
 .message-ai .message-bubble p {
@@ -776,4 +911,3 @@ body {
   display: flex;
   justify-content: flex-end;
 }
-
