@@ -1,4 +1,4 @@
-# AuraIoT: Firebase Realtime Database & Groq AI Dashboard
+# S-3 IOT: Firebase Realtime Database & Groq AI Dashboard
 
 Interactive IoT monitoring and Groq AI intelligence web dashboard.
 

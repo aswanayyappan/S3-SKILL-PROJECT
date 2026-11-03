@@ -1,4 +1,4 @@
-// AuraIoT Frontend Logic - Indian Rupee & Executive MVP Dashboard
+// S-3 IOT Frontend Logic - Indian Rupee & Executive MVP Dashboard
 
 let chatHistory = [];
 let localGroqKey = localStorage.getItem('groq_api_key') || '';
@@ -88,7 +88,7 @@ function setActiveView(view) {
   }
 
   currentView = view;
-  localStorage.setItem('aura_active_view', view);
+  localStorage.setItem('s3_active_view', view);
 
   // Update layout classes
   mainLayout.className = `main-layout view-${view}`;
@@ -117,7 +117,7 @@ function setActiveView(view) {
 // Initialize View Mode
 function initViewMode() {
   const isMobile = window.innerWidth <= 1024;
-  const savedView = localStorage.getItem('aura_active_view');
+  const savedView = localStorage.getItem('s3_active_view');
 
   if (isMobile) {
     setActiveView(savedView === 'chat' ? 'chat' : 'telemetry');

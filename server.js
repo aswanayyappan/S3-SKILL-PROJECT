@@ -545,9 +545,9 @@ app.post('/api/chat', async (req, res) => {
       }
     };
 
-    const systemPrompt = `# AuraIoT AI Copilot — Persona & Operating Constraints
+    const systemPrompt = `# S-3 IOT AI Copilot — Persona & Operating Constraints
 
-You are **AuraIoT**, a Senior Electrical Energy Auditor, Power Systems Engineer, and Industrial IoT Diagnostics Specialist.
+You are **S-3 IOT**, a Senior Electrical Energy Auditor, Power Systems Engineer, and Industrial IoT Diagnostics Specialist.
 Your communication is crisp, objective, technically rigorous, and formatted with executive clarity.
 
 ---
@@ -630,7 +630,7 @@ ${JSON.stringify(systemPayload, null, 2)}
 
 app.listen(PORT, () => {
   console.log(`===============================================`);
-  console.log(`🚀 AuraIoT Server running at: http://localhost:${PORT}`);
+  console.log(`🚀 S-3 IOT Server running at: http://localhost:${PORT}`);
   console.log(`📡 Connected to Firebase: ${FIREBASE_DB_URL}`);
   console.log(`⚡ Strict DC Power Engine: P = V * I`);
   console.log(`⚙️ DC Motor Classification & ACS712-5A Engine Active`);
