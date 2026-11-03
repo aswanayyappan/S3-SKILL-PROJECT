@@ -74,35 +74,40 @@ async function fetchTelemetry() {
   }
 }
 
-// Update Dashboard UI with latest sensor numbers & INR calculations
+// Update Dashboard UI with latest sensor numbers & strictly verified calculations
 function updateUI(data) {
   const live = data.live || {};
-  const c1 = parseFloat(live.ledCurrent ?? data.led?.current ?? 0);
-  const c2 = parseFloat(live.waterPumpCurrent ?? data.waterPump?.current ?? 0);
-  const v1 = parseFloat(live.ledVoltage ?? data.led?.voltage ?? 0);
-  const v2 = parseFloat(live.waterPumpVoltage ?? data.waterPump?.voltage ?? 0);
+  const led = data.led || {};
+  const pump = data.waterPump || {};
+  const overview = data.systemOverview || {};
+  const proj = overview.projections || {};
 
-  const pLed = data.led?.instantPowerWatts ?? (c1 * (v1 > 1 ? v1 : 12));
-  const pPump = data.waterPump?.instantPowerWatts ?? (c2 * (v2 > 50 ? v2 : 230));
+  const c1 = Number(live.ledCurrent ?? led.current ?? 0);
+  const v1 = Number(live.ledVoltage ?? led.voltage ?? 0);
+  const c2 = Number(live.waterPumpCurrent ?? pump.current ?? 0);
+  const v2 = Number(live.waterPumpVoltage ?? pump.voltage ?? 0);
 
-  // Executive KPI Strip & KSEB Billing
-  if (kpiTotalPower) kpiTotalPower.textContent = (pLed + pPump).toFixed(1);
-  if (kpiTotalUnits) kpiTotalUnits.textContent = (data.systemOverview?.totalUnitsKWh ?? data.aggregatesSummary?.unitConsumptionKWh?.total_kWh ?? 0).toFixed(4);
-  
-  const kseb = data.aggregatesSummary?.ksebBilling || {};
-  const domestic = kseb.domesticLT1 || {};
-  const monthly = kseb.monthlyProjection || {};
+  // Exact DC Power: P = V * I
+  const pLed = led.instantPowerWatts ?? (v1 * c1);
+  const pPump = pump.instantPowerWatts ?? (v2 * c2);
+  const pTotal = overview.totalPowerWatts ?? (pLed + pPump);
 
-  if (kpiTotalCostINR) kpiTotalCostINR.textContent = `₹${(domestic.totalBill ?? 0).toFixed(2)}`;
-  if (kpiMonthlyCostINR) kpiMonthlyCostINR.textContent = `₹${(monthly.projectedBillINR ?? 0).toFixed(2)}`;
-  if (kpiMonthlyUnits) kpiMonthlyUnits.textContent = `${(monthly.projectedUnits ?? 0).toFixed(0)} Units`;
-  if (headerKsebSlab) headerKsebSlab.textContent = domestic.slabType || 'Telescopic (≤250 Units)';
+  // Executive KPI Strip
+  if (kpiTotalPower) kpiTotalPower.textContent = pTotal.toFixed(2);
+  if (kpiTotalUnits) kpiTotalUnits.textContent = (overview.cumulativeUnitsKwh ?? 0).toFixed(4);
+  if (kpiTotalCostINR) kpiTotalCostINR.textContent = `₹${(overview.energyChargeINR ?? 0).toFixed(2)}`;
+
+  const histProj = proj.historicalAverage || {};
+  if (kpiMonthlyCostINR) kpiMonthlyCostINR.textContent = `₹${(histProj.monthlyCostINR ?? 0).toFixed(2)}`;
+  if (kpiMonthlyUnits) kpiMonthlyUnits.textContent = `${(histProj.monthlyUnits ?? 0).toFixed(1)} Units (Hist)`;
+
+  if (headerKsebSlab) headerKsebSlab.textContent = 'Energy Charge @ ₹8.00 / Unit';
 
   // LED Updates (ledCurrent)
   ledCurrentVal.textContent = c1.toFixed(3);
   if (ledVoltageVal) ledVoltageVal.textContent = v1.toFixed(2);
-  ledPowerVal.textContent = pLed.toFixed(2);
-  const isLedOn = data.led?.status === 'ON' || c1 > 0.05;
+  ledPowerVal.textContent = pLed.toFixed(3);
+  const isLedOn = led.status === 'ON' || c1 > 0.05;
   ledStatusBadge.textContent = isLedOn ? 'ON' : 'OFF';
   ledStatusBadge.className = `status-pill ${isLedOn ? 'status-on' : 'status-off'}`;
   
@@ -111,19 +116,19 @@ function updateUI(data) {
   ledCurrentMeter.style.width = `${ledPercent}%`;
 
   // LED Statistical Aggregates & Cost
-  const ledStats = data.led?.stats || data.aggregatesSummary?.ledCurrent;
+  const ledStats = led.stats || {};
   if (ledStats) {
-    if (ledMaxVal) ledMaxVal.textContent = `${(ledStats.maximum ?? 0).toFixed(3)} A`;
-    if (ledAvgVal) ledAvgVal.textContent = `${(ledStats.average ?? 0).toFixed(3)} A`;
-    if (ledMinVal) ledMinVal.textContent = `${(ledStats.minimum ?? 0).toFixed(3)} A`;
-    if (ledCostINRVal) ledCostINRVal.textContent = `₹${(data.led?.costINR ?? data.aggregatesSummary?.costINR?.led_inr ?? 0).toFixed(2)}`;
+    if (ledMaxVal) ledMaxVal.textContent = `${Number(ledStats.maximum ?? 0).toFixed(3)} A`;
+    if (ledAvgVal) ledAvgVal.textContent = `${Number(ledStats.average ?? 0).toFixed(3)} A`;
+    if (ledMinVal) ledMinVal.textContent = `${Number(ledStats.minimum ?? 0).toFixed(3)} A`;
+    if (ledCostINRVal) ledCostINRVal.textContent = `₹${Number(led.energyChargeINR ?? 0).toFixed(2)}`;
   }
 
   // Water Pump Updates (waterPumpCurrent & waterPumpVoltage)
   pumpVoltageVal.textContent = v2.toFixed(2);
   pumpCurrentVal.textContent = c2.toFixed(3);
-  pumpPowerVal.textContent = pPump.toFixed(1);
-  const isPumpActive = data.waterPump?.status === 'RUNNING' || c2 > 0.1;
+  pumpPowerVal.textContent = pPump.toFixed(3);
+  const isPumpActive = pump.status === 'RUNNING' || c2 > 0.05;
   pumpStatusBadge.textContent = isPumpActive ? 'ACTIVE' : 'IDLE';
   pumpStatusBadge.className = `status-pill ${isPumpActive ? 'status-active' : 'status-idle'}`;
 
@@ -132,12 +137,12 @@ function updateUI(data) {
   pumpCurrentMeter.style.width = `${pumpPercent}%`;
 
   // Pump Statistical Aggregates & Cost
-  const pumpStats = data.waterPump?.stats || data.aggregatesSummary?.waterPumpCurrent;
+  const pumpStats = pump.stats || {};
   if (pumpStats) {
-    if (pumpMaxVal) pumpMaxVal.textContent = `${(pumpStats.maximum ?? 0).toFixed(3)} A`;
-    if (pumpAvgVal) pumpAvgVal.textContent = `${(pumpStats.average ?? 0).toFixed(3)} A`;
-    if (pumpMinVal) pumpMinVal.textContent = `${(pumpStats.minimum ?? 0).toFixed(3)} A`;
-    if (pumpCostINRVal) pumpCostINRVal.textContent = `₹${(data.waterPump?.costINR ?? data.aggregatesSummary?.costINR?.pump_inr ?? 0).toFixed(2)}`;
+    if (pumpMaxVal) pumpMaxVal.textContent = `${Number(pumpStats.maximum ?? 0).toFixed(3)} A`;
+    if (pumpAvgVal) pumpAvgVal.textContent = `${Number(pumpStats.average ?? 0).toFixed(3)} A`;
+    if (pumpMinVal) pumpMinVal.textContent = `${Number(pumpStats.minimum ?? 0).toFixed(3)} A`;
+    if (pumpCostINRVal) pumpCostINRVal.textContent = `₹${Number(pump.energyChargeINR ?? 0).toFixed(2)}`;
   }
 
   // Timestamp & Status
