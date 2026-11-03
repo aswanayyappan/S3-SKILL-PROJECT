@@ -242,6 +242,7 @@ body {
   display: grid;
   grid-template-columns: 1fr 1.05fr;
   gap: 24px;
+  align-items: stretch;
 }
 
 @media (max-width: 1024px) {
@@ -570,7 +571,11 @@ body {
 .chat-panel {
   display: flex;
   flex-direction: column;
-  height: 700px;
+  height: 720px;
+  max-height: calc(100vh - 180px);
+  min-height: 580px;
+  position: relative;
+  overflow: hidden;
 }
 
 .chat-header {
@@ -580,6 +585,7 @@ body {
   padding-bottom: 14px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 14px;
+  flex-shrink: 0;
 }
 
 .chat-assistant-info {
@@ -597,6 +603,7 @@ body {
   align-items: center;
   justify-content: center;
   color: #fff;
+  flex-shrink: 0;
 }
 
 .ai-avatar svg {
@@ -615,12 +622,16 @@ body {
 }
 
 .chat-messages {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 8px;
+  margin-bottom: 10px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  scroll-behavior: smooth;
 }
 
 .chat-messages::-webkit-scrollbar {
@@ -632,10 +643,20 @@ body {
   border-radius: 4px;
 }
 
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background: #3b82f6;
+}
+
 .message {
   display: flex;
   flex-direction: column;
   max-width: 88%;
+  animation: fadeInMsg 0.25s ease-out;
+}
+
+@keyframes fadeInMsg {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .message-ai {
@@ -651,6 +672,7 @@ body {
   border-radius: var(--radius-md);
   font-size: 0.88rem;
   line-height: 1.55;
+  word-break: break-word;
 }
 
 .message-ai .message-bubble {
@@ -705,12 +727,14 @@ body {
   align-self: flex-end;
 }
 
-/* Prompt Chips */
+/* Prompt Chips - sticky above input */
 .prompt-chips {
   display: flex;
   overflow-x: auto;
   gap: 8px;
-  padding: 10px 0;
+  padding: 8px 0;
+  margin-top: auto;
+  flex-shrink: 0;
   scrollbar-width: none;
 }
 
@@ -728,6 +752,7 @@ body {
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .chip:hover {
@@ -736,11 +761,14 @@ body {
   color: #fff;
 }
 
-/* Chat Input Form */
+/* Chat Input Form - pinned permanently at the bottom */
 .chat-input-form {
   display: flex;
   gap: 10px;
-  padding-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg-card);
 }
 
 .chat-input-form input {
@@ -753,11 +781,12 @@ body {
   font-size: 0.9rem;
   font-family: inherit;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .chat-input-form input:focus {
   border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 .send-btn {
@@ -768,6 +797,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 0;
+  flex-shrink: 0;
 }
 
 .send-btn svg {

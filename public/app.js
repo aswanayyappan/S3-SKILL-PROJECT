@@ -213,7 +213,11 @@ function appendMessage(role, text) {
   msgEl.appendChild(bubble);
   msgEl.appendChild(timeEl);
   chatMessages.appendChild(msgEl);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  
+  // Smoothly scroll down inside chat container only
+  requestAnimationFrame(() => {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  });
 
   return bubble;
 }
@@ -259,7 +263,9 @@ chatForm.addEventListener('submit', async (e) => {
     loadingBubble.innerHTML = `<span style="color: #ef4444;">⚠️ <strong>Chat Error:</strong> ${err.message}</span>`;
   } finally {
     sendBtn.disabled = false;
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    requestAnimationFrame(() => {
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    });
   }
 });
 
