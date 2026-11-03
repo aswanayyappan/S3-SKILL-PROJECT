@@ -307,81 +307,99 @@ async function fetchFirebaseTelemetry() {
     const motorEnergyChargeINR = totalMotorKwh * TARIFF_RATE_PER_UNIT;
     const totalEnergyChargeINR = totalKwh * TARIFF_RATE_PER_UNIT;
 
-    // 5. Monthly Projections
-    const elapsedHours = (aggSummary?.bucketsCount > 0)
-      ? (aggSummary.bucketsCount / 60)
-      : Math.max((Date.now() - (accumulatorState.firstTimestampMs || Date.now())) / 3600000, 0.1);
+  // 5. Distinct Energy & Projection Metrics:
+  const elapsedHours = (aggSummary?.bucketsCount > 0)
+    ? (aggSummary.bucketsCount / 60)
+    : Math.max((Date.now() - (accumulatorState.firstTimestampMs || Date.now())) / 3600000, 0.1);
 
-    const historicalMonthlyUnits = elapsedHours > 0 ? (totalKwh / elapsedHours) * 720 : 0;
-    const historicalMonthlyCostINR = historicalMonthlyUnits * TARIFF_RATE_PER_UNIT;
+  // Metric 1: Actual Cumulative Energy (kWh)
+  // Metric 2: Today's / Session consumption from accumulator
+  // Metric 3: Historical average consumption rate (kWh per hour)
+  const historicalAvgKwhPerHour = elapsedHours > 0 ? (totalKwh / elapsedHours) : 0;
 
-    const currentLoadMonthlyUnits = (totalPowerWatts / 1000) * 720;
-    const currentLoadMonthlyCostINR = currentLoadMonthlyUnits * TARIFF_RATE_PER_UNIT;
+  // Metric 4: Historical Monthly Projection (720 hours @ historical average)
+  const historicalMonthlyUnits = historicalAvgKwhPerHour * 720;
+  const historicalMonthlyCostINR = historicalMonthlyUnits * TARIFF_RATE_PER_UNIT;
 
-    telemetryCache = {
-      live: {
-        ledCurrent,
-        ledVoltage,
-        motorCurrent,
-        motorVoltage,
-        // Backward compatibility
-        waterPumpCurrent: motorCurrent,
-        waterPumpVoltage: motorVoltage,
-        timestamp: currentTimestampMs
-      },
-      led: {
-        status: ledStatus,
-        current: ledCurrent,
-        voltage: ledVoltage,
-        instantPowerWatts: ledPowerWatts,
-        cumulativeKwh: totalLedKwh,
-        energyChargeINR: ledEnergyChargeINR,
-        stats: aggSummary.ledCurrent,
-        voltageStats: aggSummary.ledVoltage
-      },
-      dcMotor: {
-        status: motorStatus,
-        current: motorCurrent,
-        voltage: motorVoltage,
-        instantPowerWatts: motorPowerWatts,
-        cumulativeKwh: totalMotorKwh,
-        energyChargeINR: motorEnergyChargeINR,
-        stats: aggSummary.motorCurrent,
-        voltageStats: aggSummary.motorVoltage
-      },
-      // Backward compatibility alias for waterPump
-      waterPump: {
-        status: motorStatus,
-        current: motorCurrent,
-        voltage: motorVoltage,
-        instantPowerWatts: motorPowerWatts,
-        cumulativeKwh: totalMotorKwh,
-        energyChargeINR: motorEnergyChargeINR,
-        stats: aggSummary.motorCurrent,
-        voltageStats: aggSummary.motorVoltage
-      },
-      systemOverview: {
-        totalPowerWatts,
-        cumulativeUnitsKwh: totalKwh,
-        energyChargeINR: totalEnergyChargeINR,
-        tariffRate: `₹${TARIFF_RATE_PER_UNIT}/Unit`,
-        projections: {
-          historicalAverage: {
-            monthlyUnits: historicalMonthlyUnits,
-            monthlyCostINR: historicalMonthlyCostINR,
-            label: "Historical Average Projection"
-          },
-          currentLoad: {
-            monthlyUnits: currentLoadMonthlyUnits,
-            monthlyCostINR: currentLoadMonthlyCostINR,
-            label: "Current Load Projection"
-          }
+  // Metric 5: Current-Load Monthly Projection (24/7 continuous run at instant load: kW * 720)
+  const currentLoadMonthlyUnits = (totalPowerWatts / 1000) * 720;
+  const currentLoadMonthlyCostINR = currentLoadMonthlyUnits * TARIFF_RATE_PER_UNIT;
+
+  // Metric 6: Operating-Schedule-Based Projection (e.g., 12 hours/day for 30 days = 360 hours)
+  const schedule12hMonthlyUnits = (totalPowerWatts * 12 * 30) / 1000;
+  const schedule12hMonthlyCostINR = schedule12hMonthlyUnits * TARIFF_RATE_PER_UNIT;
+
+  telemetryCache = {
+    live: {
+      ledCurrent,
+      ledVoltage,
+      motorCurrent,
+      motorVoltage,
+      // Backward compatibility
+      waterPumpCurrent: motorCurrent,
+      waterPumpVoltage: motorVoltage,
+      timestamp: currentTimestampMs
+    },
+    led: {
+      status: ledStatus,
+      current: ledCurrent,
+      voltage: ledVoltage,
+      instantPowerWatts: ledPowerWatts,
+      cumulativeKwh: totalLedKwh,
+      energyChargeINR: ledEnergyChargeINR,
+      stats: aggSummary.ledCurrent,
+      voltageStats: aggSummary.ledVoltage
+    },
+    dcMotor: {
+      status: motorStatus,
+      current: motorCurrent,
+      voltage: motorVoltage,
+      instantPowerWatts: motorPowerWatts,
+      cumulativeKwh: totalMotorKwh,
+      energyChargeINR: motorEnergyChargeINR,
+      stats: aggSummary.motorCurrent,
+      voltageStats: aggSummary.motorVoltage
+    },
+    // Backward compatibility alias
+    waterPump: {
+      status: motorStatus,
+      current: motorCurrent,
+      voltage: motorVoltage,
+      instantPowerWatts: motorPowerWatts,
+      cumulativeKwh: totalMotorKwh,
+      energyChargeINR: motorEnergyChargeINR,
+      stats: aggSummary.motorCurrent,
+      voltageStats: aggSummary.motorVoltage
+    },
+    systemOverview: {
+      totalPowerWatts,
+      cumulativeUnitsKwh: totalKwh,
+      energyChargeINR: totalEnergyChargeINR,
+      tariffRate: `₹${TARIFF_RATE_PER_UNIT}/Unit`,
+      projections: {
+        historicalAverage: {
+          monthlyUnits: historicalMonthlyUnits,
+          monthlyCostINR: historicalMonthlyCostINR,
+          avgKwhPerHour: historicalAvgKwhPerHour,
+          elapsedHours: elapsedHours,
+          label: "Historical Average Projection (720h extrapolated from bucket history)"
+        },
+        currentLoad: {
+          monthlyUnits: currentLoadMonthlyUnits,
+          monthlyCostINR: currentLoadMonthlyCostINR,
+          label: "Current Load Projection (24/7 continuous run at current instant power)"
+        },
+        operatingSchedule12h: {
+          monthlyUnits: schedule12hMonthlyUnits,
+          monthlyCostINR: schedule12hMonthlyCostINR,
+          label: "12-Hour Daily Operating Schedule Projection (30 days)"
         }
-      },
-      aggregatesSummary: aggSummary,
-      lastUpdated: new Date().toISOString(),
-      source: 'firebase_live'
-    };
+      }
+    },
+    aggregatesSummary: aggSummary,
+    lastUpdated: new Date().toISOString(),
+    source: 'firebase_live'
+  };
 
     return telemetryCache;
   } catch (err) {
@@ -466,30 +484,42 @@ app.post('/api/chat', async (req, res) => {
   const overview = telemetry.systemOverview;
   const proj = overview.projections;
 
-  const systemPrompt = `You are "AuraIoT", an expert Electrical Engineering and Energy Systems Assistant.
-You have direct real-time access to the verified telemetry and calculation engine.
+  const systemPrompt = `You are "AuraIoT", an expert Senior Electrical Energy Systems Analyst and Instrumentation Engineer.
+You have direct real-time access to verified telemetry and the calculation engine for this test bench.
 
-HARDWARE & OPERATING SPECIFICATION:
+HARDWARE & CALIBRATION GROUND TRUTH:
 - Loads:
-  1. DC LED Fixture: Monitored via ACS712 5A and voltage sensor.
-  2. 5V DC Motor (formerly labelled Water Pump): Monitored via ACS712 5A and voltage sensor.
-- ACS712-5A Nominal Sensitivity: 185 mV/A. Equation: I = |Vout - Vzero| / 0.185.
-- DC Motor Specific Operating States:
-  * OFF: Current ≤ 0.05A
-  * NORMAL RUNNING: 0.05A - 1.2A
-  * STARTUP / HIGH LOAD: 1.2A - 2.5A (brief startup surges are normal motor inrush and must NOT be categorized as fatal overloads)
-  * STALL / OVERLOAD: > 2.5A (indicates locked rotor or mechanical stall)
-- Note on Motor Voltage: The reported voltage is ${motor.voltage.toFixed(2)}V. For a 5V rated motor, 1.18V indicates that the voltage measurement circuit/divider may need multimeter calibration, but mathematically power is strictly ${motor.voltage.toFixed(2)}V * ${motor.current.toFixed(3)}A = ${motor.instantPowerWatts.toFixed(3)}W.
+  1. DC LED Fixture: Monitored via ACS712 5A current sensor and voltage divider.
+  2. 5V DC Motor (formerly labelled Water Pump): Monitored via ACS712 5A current sensor and voltage divider.
+- ACS712-5A Nominal Calibration: Sensitivity = 185 mV/A. Equation: I = |Vout - Vzero| / 0.185.
+- Motor Voltage Sensor Note: The motor is nominally rated 5V DC, but the sensor currently reports ${motor.voltage.toFixed(2)}V. This suggests the voltage divider multiplier or ADC attenuation on the ESP32 requires physical multimeter verification across motor terminals while spinning. Mathematically, power is strictly computed using the calibrated measured values: P = V * I.
 
-CURRENT VERIFIED TELEMETRY:
-- LED: ${led.voltage.toFixed(2)}V × ${led.current.toFixed(3)}A = ${led.instantPowerWatts.toFixed(3)}W (${led.status})
-- DC Motor: ${motor.voltage.toFixed(2)}V × ${motor.current.toFixed(3)}A = ${motor.instantPowerWatts.toFixed(3)}W (${motor.status})
-- Total Power: ${overview.totalPowerWatts.toFixed(3)}W
-- Cumulative Energy: ${overview.cumulativeUnitsKwh.toFixed(4)} Units (kWh) | Energy Charge: ₹${overview.energyChargeINR.toFixed(2)} (@ ₹8/Unit)
-- Historical Average Projection: ${proj.historicalAverage.monthlyUnits.toFixed(1)} Units/mo (₹${proj.historicalAverage.monthlyCostINR.toFixed(2)})
-- Current Load Projection: ${proj.currentLoad.monthlyUnits.toFixed(1)} Units/mo (₹${proj.currentLoad.monthlyCostINR.toFixed(2)})
+MOTOR OPERATING STATE SPECIFICATION (Distinguishing inrush vs stall):
+- OFF: Current ≤ 0.05 A
+- NORMAL RUNNING: 0.05 A - 1.20 A
+- STARTUP / HIGH LOAD: 1.20 A - 2.50 A (Brief inrush surge during motor acceleration is normal physics; DO NOT alarm as overload)
+- STALL / OVERLOAD: > 2.50 A (Rotor lock, mechanical jamming, or short circuit)
 
-Answer questions with electrical precision, concise tables, and clear engineering advice.`;
+SIX STRICTLY SEPARATE ENERGY & PROJECTION METRICS (NEVER INTERCHANGE OR SUBSTITUTE):
+1. Actual Cumulative Energy: Exactly ${overview.cumulativeUnitsKwh.toFixed(4)} Units (kWh) integrated via timestamps.
+2. Incurred Energy Charge: Exactly ${overview.cumulativeUnitsKwh.toFixed(4)} kWh × ₹${TARIFF_RATE_PER_UNIT} = ₹${overview.energyChargeINR.toFixed(2)} (Energy charge only; not a full statutory bill with fixed charges/duty).
+3. Historical Average Consumption Rate: ${proj.historicalAverage.avgKwhPerHour.toFixed(5)} kWh/hour over ${proj.historicalAverage.elapsedHours.toFixed(2)} hours of historical bucket data.
+4. Historical Monthly Projection: ${proj.historicalAverage.monthlyUnits.toFixed(2)} Units/month (Extrapolated: ${proj.historicalAverage.avgKwhPerHour.toFixed(5)} kWh/h × 720 h = ${proj.historicalAverage.monthlyUnits.toFixed(2)} Units; Cost = ${proj.historicalAverage.monthlyUnits.toFixed(2)} × ₹8 = ₹${proj.historicalAverage.monthlyCostINR.toFixed(2)}).
+5. Current-Load Monthly Projection: Continuous 24/7 run at current instant load (${overview.totalPowerWatts.toFixed(3)} W / 1000 × 720 h) = ${proj.currentLoad.monthlyUnits.toFixed(3)} Units/month (Cost = ${proj.currentLoad.monthlyUnits.toFixed(3)} × ₹8 = ₹${proj.currentLoad.monthlyCostINR.toFixed(2)}).
+6. Operating-Schedule-Based Projection: Example 12 hours/day for 30 days (360 hours):
+   - Formula: E = (P_total × 12 h × 30 d) / 1000 = (${overview.totalPowerWatts.toFixed(3)} W × 360) / 1000 = ${proj.operatingSchedule12h.monthlyUnits.toFixed(3)} kWh/month.
+   - Cost at ₹8/unit: ${proj.operatingSchedule12h.monthlyUnits.toFixed(3)} × ₹8 = ₹${proj.operatingSchedule12h.monthlyCostINR.toFixed(2)}/month.
+   - 30% Energy Savings Scenario: If operating time is reduced by 30% (from 12h to 8.4h daily):
+     * New consumption = ${proj.operatingSchedule12h.monthlyUnits.toFixed(3)} × 0.70 = ${(proj.operatingSchedule12h.monthlyUnits * 0.70).toFixed(3)} Units.
+     * Energy saved = ${(proj.operatingSchedule12h.monthlyUnits * 0.30).toFixed(3)} Units.
+     * Monthly money saved = ${(proj.operatingSchedule12h.monthlyCostINR * 0.30).toFixed(2)} ₹/month.
+
+MATHEMATICAL AND REASONING DIRECTIVES:
+- NEVER claim that the cumulative energy (${overview.cumulativeUnitsKwh.toFixed(4)} kWh) represents an entire day's consumption unless an explicit daily counter exists. Label it as "Cumulative energy recorded so far".
+- NEVER state that the historical projection is what the user's real-world bill will be; clearly state that future bills depend on actual user duty cycles and operating schedules.
+- Always perform arithmetic explicitly. For example, if multiplying 0.4 Units by ₹8, state ₹3.20 (not ₹3.40).
+- If asked about the 5V motor voltage reporting 1.18V, explain the multimeter verification procedure clearly: measure with a DC voltmeter directly across motor terminals while spinning to distinguish low supply voltage from an uncalibrated ESP32 divider.
+- Present answers in crisp markdown tables and bold key figures.`;
 
   const clientApiKey = req.headers['x-groq-key'] || process.env.GROQ_API_KEY;
 
