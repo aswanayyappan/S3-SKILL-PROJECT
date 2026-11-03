@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>AuraIoT - Smart Facility Telemetry & AI Copilot</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -20,40 +20,71 @@
             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
           </svg>
         </div>
-        <div>
+        <div class="brand-text">
           <h1>AuraIoT <span class="badge-live">LIVE</span></h1>
-          <p class="subtitle">Smart Energy Monitoring &bull; Firebase RTDB &bull; Groq AI</p>
+          <p class="subtitle">Smart Telemetry &bull; Firebase RTDB &bull; Groq AI</p>
         </div>
       </div>
       
       <div class="header-actions">
-        <a href="#chatSection" class="btn btn-secondary mobile-chat-jump" title="Jump to Chat">
-          💬 Chat Copilot
-        </a>
-        <div class="inr-badge" title="KSEB 2026 Tariff Schedule Active">
+        <div class="inr-badge" title="Energy Charge Rate">
           <span class="currency-symbol">⚡</span>
-          <span>KSEB Tariff: <strong id="headerKsebSlab">Telescopic (≤250 Units)</strong></span>
+          <span>Tariff: <strong id="headerKsebSlab">₹8.00 / Unit</strong></span>
         </div>
         <div class="db-badge" title="Connected to Firebase Realtime DB">
           <span class="db-indicator pulse-green"></span>
-          <span>s3-skills-default-rtdb</span>
+          <span class="db-name">Firebase RTDB</span>
         </div>
-        <button id="apiKeyBtn" class="btn btn-secondary" title="Set Groq API Key">
-          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+        <button id="apiKeyBtn" class="btn btn-secondary btn-sm" title="Configure Groq Key">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
             <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
           </svg>
-          Groq Key
+          <span class="btn-text">Groq Key</span>
         </button>
-        <button id="refreshBtn" class="btn btn-icon" title="Refresh Telemetry">
-          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+        <button id="refreshBtn" class="btn btn-icon btn-sm" title="Refresh Telemetry">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
             <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
           </svg>
         </button>
       </div>
     </header>
 
-    <!-- KPI Metric Strip (MVP / Prototype Executive Summary) -->
-    <section class="kpi-strip">
+    <!-- Top View Switcher Navigation Bar (Desktop & Mobile Tabs) -->
+    <nav class="view-switcher-bar" id="viewSwitcherBar">
+      <div class="tabs-group" role="tablist">
+        <button class="view-tab active" data-view="split" id="tabSplitBtn" role="tab" aria-selected="true" title="Split Screen: Telemetry & AI Chat side-by-side">
+          <span class="tab-icon">⚡</span>
+          <span class="tab-text">Split View</span>
+        </button>
+        <button class="view-tab" data-view="telemetry" id="tabTelemetryBtn" role="tab" aria-selected="false" title="Full Telemetry & Hardware View">
+          <span class="tab-icon">📊</span>
+          <span class="tab-text">Telemetry</span>
+        </button>
+        <button class="view-tab" data-view="chat" id="tabChatBtn" role="tab" aria-selected="false" title="Full AI Copilot Chat View">
+          <span class="tab-icon">💬</span>
+          <span class="tab-text">AI Copilot</span>
+          <span class="tab-badge-dot pulse-green"></span>
+        </button>
+      </div>
+
+      <div class="quick-status-strip" id="quickStatusStrip">
+        <div class="quick-stat">
+          <span class="quick-stat-label">LOAD:</span>
+          <span class="quick-stat-val" id="navKpiLoad">0.000 W</span>
+        </div>
+        <div class="quick-stat">
+          <span class="quick-stat-label">UNITS:</span>
+          <span class="quick-stat-val" id="navKpiUnits">0.0000 kWh</span>
+        </div>
+        <div class="quick-stat inr-highlight">
+          <span class="quick-stat-label">COST:</span>
+          <span class="quick-stat-val" id="navKpiCost">₹0.00</span>
+        </div>
+      </div>
+    </nav>
+
+    <!-- KPI Metric Strip (Executive Summary) -->
+    <section class="kpi-strip" id="kpiStripSection">
       <div class="kpi-card">
         <div class="kpi-icon kpi-blue">⚡</div>
         <div class="kpi-details">
@@ -65,16 +96,16 @@
       <div class="kpi-card">
         <div class="kpi-icon kpi-green">📊</div>
         <div class="kpi-details">
-          <span class="kpi-label">CUMULATIVE UNITS (kWh)</span>
-          <div class="kpi-value"><span id="kpiTotalUnits">0.0000</span> <small>Units</small></div>
+          <span class="kpi-label">CUMULATIVE UNITS</span>
+          <div class="kpi-value"><span id="kpiTotalUnits">0.0000</span> <small>kWh</small></div>
         </div>
       </div>
 
       <div class="kpi-card inr-kpi">
         <div class="kpi-icon kpi-inr">₹</div>
         <div class="kpi-details">
-          <span class="kpi-label">ESTIMATED ENERGY CHARGE</span>
-          <div class="kpi-value"><span id="kpiTotalCostINR">₹0.00</span> <small>@ ₹8/U</small></div>
+          <span class="kpi-label">ENERGY CHARGE (@ ₹8)</span>
+          <div class="kpi-value"><span id="kpiTotalCostINR">₹0.00</span> <small>INR</small></div>
         </div>
       </div>
 
@@ -87,10 +118,10 @@
       </div>
     </section>
 
-    <!-- Main Content Grid -->
-    <main class="main-layout">
-      <!-- Left Panel: Telemetry & Controls -->
-      <section class="telemetry-panel">
+    <!-- Main Content Layout -->
+    <main class="main-layout view-split" id="mainLayout">
+      <!-- Left Panel: Telemetry & Hardware Cards -->
+      <section class="telemetry-panel" id="telemetrySection">
         <div class="section-title">
           <h2>Device Telemetry & Statistical Aggregates</h2>
           <span id="lastUpdated" class="last-sync">Syncing...</span>
@@ -132,7 +163,7 @@
               <div class="metric-block">
                 <span class="metric-label">INSTANT LOAD</span>
                 <div class="metric-value-wrap">
-                  <span id="ledPowerVal" class="metric-val">0.0</span>
+                  <span id="ledPowerVal" class="metric-val">0.000</span>
                   <span class="metric-unit">W</span>
                 </div>
               </div>
@@ -149,14 +180,14 @@
 
             <!-- Statistical Breakdown for LED -->
             <div class="stats-row">
-              <div class="stat-pill"><span>Max Peak:</span> <strong id="ledMaxVal">-- A</strong></div>
+              <div class="stat-pill"><span>Max:</span> <strong id="ledMaxVal">-- A</strong></div>
               <div class="stat-pill"><span>Avg:</span> <strong id="ledAvgVal">-- A</strong></div>
               <div class="stat-pill"><span>Min:</span> <strong id="ledMinVal">-- A</strong></div>
               <div class="stat-pill inr-pill"><span>Cost:</span> <strong id="ledCostINRVal">₹0.00</strong></div>
             </div>
           </div>
 
-          <!-- CARD 2: DC Motor Telemetry -->
+          <!-- CARD 2: 5V DC Motor Telemetry -->
           <div class="card device-card pump-card" id="pumpCard">
             <div class="card-header">
               <div class="card-icon pump-icon">
@@ -167,7 +198,7 @@
               </div>
               <div class="card-title-group">
                 <h3>5V DC Motor</h3>
-                <span class="device-tag">Field: <code>waterPumpCurrent</code> / <code>motorCurrent</code> &bull; ACS712 5A</span>
+                <span class="device-tag">Field: <code>motorCurrent</code> &bull; ACS712 5A</span>
               </div>
               <span id="pumpStatusBadge" class="status-pill status-idle">IDLE</span>
             </div>
@@ -203,13 +234,13 @@
             </div>
             <div class="meter-legend">
               <span>0.0 A</span>
-              <span>Normal Running (0.1–1.2A)</span>
+              <span>Running (0.1–1.2A)</span>
               <span>5.0 A Max</span>
             </div>
 
             <!-- Statistical Breakdown for Motor -->
             <div class="stats-row">
-              <div class="stat-pill"><span>Max Peak:</span> <strong id="pumpMaxVal">-- A</strong></div>
+              <div class="stat-pill"><span>Max:</span> <strong id="pumpMaxVal">-- A</strong></div>
               <div class="stat-pill"><span>Avg:</span> <strong id="pumpAvgVal">-- A</strong></div>
               <div class="stat-pill"><span>Min:</span> <strong id="pumpMinVal">-- A</strong></div>
               <div class="stat-pill inr-pill"><span>Cost:</span> <strong id="pumpCostINRVal">₹0.00</strong></div>
@@ -220,7 +251,7 @@
         <!-- Telemetry Simulator & Stress Tester -->
         <div class="card sim-card">
           <div class="sim-header">
-            <h4>Live Prototype Simulator & Scenario Testing</h4>
+            <h4>Live Bench Simulator & Scenario Testing</h4>
             <span class="sim-help">Push synthetic current/voltage to test real-time AI alerts and cost estimation</span>
           </div>
           
@@ -241,7 +272,7 @@
           </div>
 
           <div class="preset-buttons">
-            <span>Prototype Test Scenarios:</span>
+            <span class="preset-label">Test Scenarios:</span>
             <button class="preset-btn" data-c1="0.0" data-c2="0.0" data-v2="1.18">Standby / All OFF</button>
             <button class="preset-btn" data-c1="0.39" data-c2="0.18" data-v2="1.18">Current Bench Data</button>
             <button class="preset-btn" data-c1="0.39" data-c2="0.85" data-v2="5.0">Normal 5V Motor Run</button>
@@ -251,8 +282,9 @@
         </div>
       </section>
 
-      <!-- Right Panel: Groq AI Assistant Chat -->
-      <section class="chat-panel card" id="chatSection">
+      <!-- Right Panel: Groq AI Assistant Chat (STRICT CONTAINER: NEVER OVERFLOWS, INPUT LOCKED AT BOTTOM) -->
+      <section class="chat-panel" id="chatSection">
+        <!-- Pinned Chat Header -->
         <div class="chat-header">
           <div class="chat-assistant-info">
             <div class="ai-avatar">
@@ -262,7 +294,7 @@
             </div>
             <div>
               <h3>AuraIoT AI Copilot</h3>
-              <p class="model-tag">Groq Llama / GPT-OSS &bull; Indian Rupee (₹) Energy Engine</p>
+              <p class="model-tag">Groq Llama &bull; Verified Calculations in ₹ INR</p>
             </div>
           </div>
           <div class="chat-quick-actions">
@@ -270,15 +302,15 @@
           </div>
         </div>
 
-        <!-- Chat Conversation Messages Container -->
+        <!-- Chat Conversation Messages Container: THE ONLY SCROLLABLE ELEMENT INSIDE -->
         <div class="chat-messages" id="chatMessages">
           <div class="message message-ai">
             <div class="message-bubble">
               <p>🙏 <strong>Namaste!</strong> I am your <strong>AuraIoT Energy & Telemetry Copilot</strong> connected live to your Firebase Realtime Database.</p>
-              <p>I track all real-time readings and minute-level statistical aggregates:</p>
+              <p>I track all real-time readings and statistical aggregates:</p>
               <ul>
                 <li><strong>LED Fixture:</strong> <code>ledCurrent</code> & <code>ledVoltage</code></li>
-                <li><strong>Water Pump:</strong> <code>waterPumpCurrent</code> & <code>waterPumpVoltage</code></li>
+                <li><strong>5V DC Motor:</strong> <code>waterPumpCurrent</code> / <code>motorCurrent</code> &bull; ACS712 5A</li>
                 <li><strong>Billing Engine:</strong> Standard tariff calculated strictly in <strong>Indian Rupees (₹8.00/Unit)</strong>.</li>
               </ul>
               <p>Ask me about max peaks, surge detection, power consumption, or monthly electricity bill projections!</p>
@@ -287,24 +319,29 @@
           </div>
         </div>
 
-        <!-- Suggested Prompt Chips -->
-        <div class="prompt-chips">
+        <!-- Floating Scroll to Bottom Button -->
+        <button id="scrollToBottomBtn" class="scroll-bottom-btn" title="Scroll to latest message" aria-label="Scroll to bottom">
+          ↓ Latest
+        </button>
+
+        <!-- Suggested Prompt Chips (Pinned above input) -->
+        <div class="prompt-chips" id="promptChips">
           <button class="chip" data-prompt="Verify exact DC motor and LED power calculations (P = V * I) with formulas.">⚡ DC Motor & LED Power</button>
           <button class="chip" data-prompt="How does the system distinguish normal motor running from startup surge and motor stall?">⚙️ Motor State Logic</button>
           <button class="chip" data-prompt="Is the reported 1.18V motor voltage normal for a 5V DC motor? Give calibration steps.">🔍 5V Motor Voltage Check</button>
           <button class="chip" data-prompt="Show energy charges in ₹ for both devices and monthly projections.">💰 Energy & Cost in ₹</button>
         </div>
 
-        <!-- Chat Input Form -->
+        <!-- Chat Input Form: PERMANENTLY ANCHORED AT THE BOTTOM, NEVER MOVES DOWNSIDE -->
         <form class="chat-input-form" id="chatForm">
           <input 
             type="text" 
             id="chatInput" 
-            placeholder="Ask about LED current, pump load, peak surges or cost in ₹..." 
+            placeholder="Ask about LED current, motor load, peak surges or cost in ₹..." 
             autocomplete="off"
             required
           />
-          <button type="submit" id="sendBtn" class="btn btn-primary send-btn" aria-label="Send Message">
+          <button type="submit" id="sendBtn" class="btn btn-primary send-btn" aria-label="Send Message" title="Send (Enter)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -313,6 +350,13 @@
         </form>
       </section>
     </main>
+
+    <!-- Mobile Floating Action Button (FAB) to instantly open Chat without scrolling -->
+    <button class="fab-chat-btn" id="fabChatBtn" title="Open AI Copilot Chat" aria-label="Open AI Copilot Chat">
+      <span class="fab-icon">💬</span>
+      <span class="fab-label">Chat Copilot</span>
+      <span class="fab-pulse pulse-green"></span>
+    </button>
   </div>
 
   <!-- API Key Modal -->
@@ -323,7 +367,7 @@
         <button id="closeModalBtn" class="btn-close">&times;</button>
       </div>
       <div class="modal-body">
-        <p>Enter your <strong>Groq API Key</strong> to chat directly with Groq's ultra-fast models. You can also save it in your project's <code>.env</code> file.</p>
+        <p>Enter your <strong>Groq API Key</strong> to chat directly with Groq's high-speed energy model. You can also save it in your project's <code>.env</code> file.</p>
         <div class="input-wrap">
           <label for="customGroqKey">Groq API Key (<code>gsk_...</code>)</label>
           <input type="password" id="customGroqKey" placeholder="gsk_..." />

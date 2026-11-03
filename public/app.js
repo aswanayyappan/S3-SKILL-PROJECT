@@ -3,6 +3,19 @@
 let chatHistory = [];
 let localGroqKey = localStorage.getItem('groq_api_key') || '';
 
+// View Switcher & Tabs Elements
+const mainLayout = document.getElementById('mainLayout');
+const tabSplitBtn = document.getElementById('tabSplitBtn');
+const tabTelemetryBtn = document.getElementById('tabTelemetryBtn');
+const tabChatBtn = document.getElementById('tabChatBtn');
+const fabChatBtn = document.getElementById('fabChatBtn');
+const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
+
+// Nav Bar Quick Stats
+const navKpiLoad = document.getElementById('navKpiLoad');
+const navKpiUnits = document.getElementById('navKpiUnits');
+const navKpiCost = document.getElementById('navKpiCost');
+
 // KPI Elements
 const kpiTotalPower = document.getElementById('kpiTotalPower');
 const kpiTotalUnits = document.getElementById('kpiTotalUnits');
@@ -22,7 +35,7 @@ const ledAvgVal = document.getElementById('ledAvgVal');
 const ledMinVal = document.getElementById('ledMinVal');
 const ledCostINRVal = document.getElementById('ledCostINRVal');
 
-// Pump Card Elements
+// Motor Card Elements
 const pumpVoltageVal = document.getElementById('pumpVoltageVal');
 const pumpCurrentVal = document.getElementById('pumpCurrentVal');
 const pumpPowerVal = document.getElementById('pumpPowerVal');
@@ -37,6 +50,7 @@ const lastUpdated = document.getElementById('lastUpdated');
 const refreshBtn = document.getElementById('refreshBtn');
 
 // Chat Elements
+const chatSection = document.getElementById('chatSection');
 const chatMessages = document.getElementById('chatMessages');
 const chatForm = document.getElementById('chatForm');
 const chatInput = document.getElementById('chatInput');
@@ -60,7 +74,81 @@ if (localGroqKey) {
   customGroqKey.value = localGroqKey;
 }
 
-// Telemetry Poller
+// ========================================================
+// VIEW SWITCHER CONTROLLER (Split, Telemetry, AI Chat)
+// ========================================================
+let currentView = 'split';
+
+function setActiveView(view) {
+  const isMobile = window.innerWidth <= 1024;
+  
+  // On mobile devices, 'split' falls back to 'telemetry' or 'chat'
+  if (isMobile && view === 'split') {
+    view = 'telemetry';
+  }
+
+  currentView = view;
+  localStorage.setItem('aura_active_view', view);
+
+  // Update layout classes
+  mainLayout.className = `main-layout view-${view}`;
+  document.body.classList.toggle('chat-view-active', view === 'chat');
+
+  // Update tab buttons active state
+  [tabSplitBtn, tabTelemetryBtn, tabChatBtn].forEach(btn => {
+    if (!btn) return;
+    const btnView = btn.dataset.view;
+    const isActive = btnView === view;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+  });
+
+  // When switching to Chat view, auto-scroll to latest and focus input
+  if (view === 'chat' || view === 'split') {
+    requestAnimationFrame(() => {
+      scrollChatToBottom(false);
+      if (view === 'chat') {
+        setTimeout(() => chatInput && chatInput.focus(), 150);
+      }
+    });
+  }
+}
+
+// Initialize View Mode
+function initViewMode() {
+  const isMobile = window.innerWidth <= 1024;
+  const savedView = localStorage.getItem('aura_active_view');
+
+  if (isMobile) {
+    setActiveView(savedView === 'chat' ? 'chat' : 'telemetry');
+  } else {
+    setActiveView(savedView || 'split');
+  }
+}
+
+// Window resize handler for view adaptation
+window.addEventListener('resize', () => {
+  const isMobile = window.innerWidth <= 1024;
+  if (isMobile && currentView === 'split') {
+    setActiveView('telemetry');
+  }
+});
+
+// View Tab click handlers
+if (tabSplitBtn) tabSplitBtn.addEventListener('click', () => setActiveView('split'));
+if (tabTelemetryBtn) tabTelemetryBtn.addEventListener('click', () => setActiveView('telemetry'));
+if (tabChatBtn) tabChatBtn.addEventListener('click', () => setActiveView('chat'));
+
+// Mobile Floating Action Button (FAB) -> instantly opens chat with 0 scrolling
+if (fabChatBtn) {
+  fabChatBtn.addEventListener('click', () => {
+    setActiveView('chat');
+  });
+}
+
+// ========================================================
+// TELEMETRY FETCHER & DATA PROCESSOR
+// ========================================================
 async function fetchTelemetry() {
   try {
     const res = await fetch('/api/telemetry');
@@ -91,6 +179,11 @@ function updateUI(data) {
   const pLed = led.instantPowerWatts ?? (v1 * c1);
   const pMotor = motor.instantPowerWatts ?? (v2 * c2);
   const pTotal = overview.totalPowerWatts ?? (pLed + pMotor);
+
+  // Header quick status bar
+  if (navKpiLoad) navKpiLoad.textContent = `${pTotal.toFixed(3)} W`;
+  if (navKpiUnits) navKpiUnits.textContent = `${(overview.cumulativeUnitsKwh ?? 0).toFixed(4)} kWh`;
+  if (navKpiCost) navKpiCost.textContent = `₹${(overview.energyChargeINR ?? 0).toFixed(2)}`;
 
   // Executive KPI Strip
   if (kpiTotalPower) kpiTotalPower.textContent = pTotal.toFixed(3);
@@ -161,7 +254,9 @@ function updateUI(data) {
   lastUpdated.textContent = `Sync: ${date.toLocaleTimeString()} | ${buckets} Minute Buckets`;
 }
 
-// Simulator Trigger
+// ========================================================
+// LIVE SIMULATOR & TEST BENCH
+// ========================================================
 applySimBtn.addEventListener('click', async () => {
   const c1 = parseFloat(simC1.value) || 0;
   const c2 = parseFloat(simC2.value) || 0;
@@ -192,6 +287,39 @@ document.querySelectorAll('.preset-btn').forEach(btn => {
   });
 });
 
+// ========================================================
+// CHAT SCROLL CONTROLLER ("inside make move can")
+// ========================================================
+function scrollChatToBottom(smooth = true) {
+  if (!chatMessages) return;
+  chatMessages.scrollTo({
+    top: chatMessages.scrollHeight,
+    behavior: smooth ? 'smooth' : 'auto'
+  });
+  // Secondary fallback to guarantee bottom anchor after markdown reflow
+  setTimeout(() => {
+    if (chatMessages) {
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+  }, 60);
+}
+
+// Detect if user has scrolled up inside the chat to show/hide "Scroll to bottom" button
+if (chatMessages && scrollToBottomBtn) {
+  chatMessages.addEventListener('scroll', () => {
+    const distanceFromBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight;
+    if (distanceFromBottom > 120) {
+      scrollToBottomBtn.classList.add('visible');
+    } else {
+      scrollToBottomBtn.classList.remove('visible');
+    }
+  });
+
+  scrollToBottomBtn.addEventListener('click', () => {
+    scrollChatToBottom(true);
+  });
+}
+
 // Append Message to Chat
 function appendMessage(role, text) {
   const msgEl = document.createElement('div');
@@ -214,11 +342,7 @@ function appendMessage(role, text) {
   msgEl.appendChild(timeEl);
   chatMessages.appendChild(msgEl);
   
-  // Smoothly scroll down inside chat container only
-  requestAnimationFrame(() => {
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  });
-
+  scrollChatToBottom(true);
   return bubble;
 }
 
@@ -231,7 +355,7 @@ chatForm.addEventListener('submit', async (e) => {
   chatInput.value = '';
   appendMessage('user', userText);
 
-  const loadingBubble = appendMessage('ai', 'Thinking and inspecting telemetry with Indian Rupee calculations...');
+  const loadingBubble = appendMessage('ai', 'Thinking and inspecting telemetry with verified Indian Rupee calculations...');
   sendBtn.disabled = true;
 
   try {
@@ -263,15 +387,17 @@ chatForm.addEventListener('submit', async (e) => {
     loadingBubble.innerHTML = `<span style="color: #ef4444;">⚠️ <strong>Chat Error:</strong> ${err.message}</span>`;
   } finally {
     sendBtn.disabled = false;
-    requestAnimationFrame(() => {
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-    });
+    scrollChatToBottom(true);
+    chatInput.focus();
   }
 });
 
-// Prompt Chips
+// Prompt Chips: If in mobile telemetry view, switch to chat tab and submit
 document.querySelectorAll('.prompt-chips .chip').forEach(chip => {
   chip.addEventListener('click', () => {
+    if (currentView === 'telemetry') {
+      setActiveView('chat');
+    }
     chatInput.value = chip.dataset.prompt;
     chatForm.dispatchEvent(new Event('submit'));
   });
@@ -283,6 +409,7 @@ clearChatBtn.addEventListener('click', () => {
   appendMessage('ai', 'Chat history cleared. How can I help you analyze the energy data in Indian Rupees (₹)?');
 });
 
+// Groq Key Modal
 apiKeyBtn.addEventListener('click', () => keyModal.classList.add('open'));
 closeModalBtn.addEventListener('click', () => keyModal.classList.remove('open'));
 keyModal.addEventListener('click', (e) => {
@@ -299,6 +426,7 @@ saveKeyBtn.addEventListener('click', () => {
 
 refreshBtn.addEventListener('click', fetchTelemetry);
 
-// Initial Telemetry Fetch & 3-sec interval
+// Initial Setup
+initViewMode();
 fetchTelemetry();
 setInterval(fetchTelemetry, 3000);
