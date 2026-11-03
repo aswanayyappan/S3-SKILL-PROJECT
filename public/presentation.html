@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>S-3 IOT - Project Presentation Slides</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --bg-card: #131b2e;
+      --bg-card-alt: #1a233a;
+      --border: #24304f;
+      --primary: #3b82f6;
+      --primary-glow: rgba(59, 130, 246, 0.3);
+      --accent-cyan: #06b6d4;
+      --accent-green: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-purple: #8b5cf6;
+      --accent-red: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: radial-gradient(circle at 50% 20%, #151e36 0%, var(--bg-dark) 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Top Presentation Bar */
+    .pres-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 24px;
+      background: rgba(19, 27, 46, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .pres-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-pill {
+      background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+    }
+
+    .pres-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-nav {
+      background: var(--bg-card-alt);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .btn-nav:hover {
+      background: var(--border);
+      border-color: var(--primary);
+    }
+
+    .slide-counter {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      padding: 4px 10px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 6px;
+    }
+
+    /* Slide Stage */
+    .deck-viewport {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .slide-container {
+      width: 100%;
+      max-width: 1180px;
+      min-height: 640px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 48px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      position: relative;
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .slide-container.active {
+      display: flex;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.99); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Slide Header */
+    .slide-head {
+      margin-bottom: 24px;
+    }
+
+    .slide-category {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--primary);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .slide-title {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #fff;
+    }
+
+    .slide-subtitle {
+      font-size: 1rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Slide Content Area */
+    .slide-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    /* Slide Footer */
+    .slide-foot {
+      margin-top: 28px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Grid & Cards within slides */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .panel-card {
+      background: var(--bg-card-alt);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+      transition: all 0.2s;
+    }
+
+    .panel-card:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .panel-card h4 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-card p {
+      font-size: 0.88rem;
+      line-height: 1.55;
+      color: var(--text-muted);
+    }
+
+    .panel-card ul {
+      margin-left: 18px;
+      margin-top: 8px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .badge-tag {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .tag-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .tag-green { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .tag-amber { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .tag-purple { background: rgba(139, 92, 246, 0.2); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.3); }
+
+    /* Tables */
+    .table-custom {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin: 12px 0;
+    }
+
+    .table-custom th, .table-custom td {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      text-align: left;
+    }
+
+    .table-custom th {
+      background: rgba(15, 23, 42, 0.7);
+      color: var(--accent-cyan);
+      font-weight: 700;
+    }
+
+    .table-custom td {
+      background: rgba(19, 27, 46, 0.4);
+      color: #e2e8f0;
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Diagram Canvas / SVG wrappers */
+    .diagram-wrap {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .diagram-wrap svg {
+      width: 100%;
+      height: auto;
+      max-height: 400px;
+    }
+
+    /* Title Slide Specifics */
+    .title-slide-content {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      border-radius: 999px;
+      color: #60a5fa;
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 20px;
+    }
+
+    .title-main {
+      font-size: 3.4rem;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 16px;
+    }
+
+    .title-sub {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      max-width: 780px;
+      margin: 0 auto 36px auto;
+      line-height: 1.6;
+    }
+
+    .title-meta {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .meta-box {
+      background: var(--bg-card-alt);
+      border: 1px solid var(--border);
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+    }
+
+    .meta-box strong {
+      color: #fff;
+      display: block;
+      font-size: 0.95rem;
+    }
+
+    /* Navigation Overlay Pills */
+    .nav-dots {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--border);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .dot.active {
+      background: var(--primary);
+      width: 32px;
+      border-radius: 999px;
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+
+    /* Print styling */
+    @media print {
+      body {
+        background: #fff;
+        color: #000;
+      }
+      .pres-header, .nav-dots {
+        display: none;
+      }
+      .slide-container {
+        display: flex !important;
+        page-break-after: always;
+        border: 1px solid #ccc;
+        box-shadow: none;
+        color: #000;
+        background: #fff;
+        min-height: 600px;
+        margin-bottom: 20px;
+      }
+      .slide-title, .title-main {
+        color: #000 !important;
+        -webkit-text-fill-color: #000 !important;
+      }
+      .panel-card, .diagram-wrap {
+        background: #f8fafc !important;
+        border-color: #e2e8f0 !important;
+        color: #000 !important;
+      }
+      .table-custom th, .table-custom td {
+        border-color: #cbd5e1 !important;
+        color: #000 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Presentation Bar -->
+  <header class="pres-header">
+    <div class="pres-brand">
+      <span class="brand-pill">PROJECT DECK</span>
+      <span>S-3 IOT &bull; Smart Energy Monitoring & AI Copilot</span>
+    </div>
+    <div class="pres-controls">
+      <a href="/" class="btn-nav" title="Back to Live Dashboard">
+        <span>⚡</span> Live Dashboard
+      </a>
+      <button class="btn-nav" id="prevBtn" title="Previous Slide (← or PageUp)">
+        <span>◀</span> Prev
+      </button>
+      <span class="slide-counter" id="slideIndicator">Slide 1 of 8</span>
+      <button class="btn-nav" id="nextBtn" title="Next Slide (→ or Space/PageDown)">
+        Next <span>▶</span>
+      </button>
+      <button class="btn-nav" id="fullscreenBtn" title="Toggle Fullscreen (F)">
+        ⛶ Fullscreen
+      </button>
+      <button class="btn-nav" onclick="window.print()" title="Print / Save to PDF">
+        🖨️ PDF Export
+      </button>
+    </div>
+  </header>
+
+  <!-- Viewport for Presentation Slides -->
+  <main class="deck-viewport">
+
+    <!-- ========================================== -->
+    <!-- SLIDE 1: TITLE SLIDE                       -->
+    <!-- ========================================== -->
+    <section class="slide-container active" id="slide-1">
+      <div class="slide-head"></div>
+      <div class="slide-body title-slide-content">
+        <div class="hero-badge">
+          <span>⚡</span> EDGE-TO-CLOUD TELEMETRY &bull; DETERMINISTIC AUDITING &bull; GENERATIVE AI
+        </div>
+        <h1 class="title-main">S-3 IOT</h1>
+        <p class="title-sub">
+          Smart Facility Energy Monitoring System with ESP32 Edge Telemetry, Deterministic DC Power Integration, and Autonomous Groq AI Copilot
+        </p>
+
+        <div class="title-meta">
+          <div class="meta-box">
+            <span>Hardware Architecture</span>
+            <strong>ESP32 + ACS712-5A + Dividers</strong>
+          </div>
+          <div class="meta-box">
+            <span>Cloud Realtime Hub</span>
+            <strong>Google Firebase RTDB</strong>
+          </div>
+          <div class="meta-box">
+            <span>Calculation Engine</span>
+            <strong>Node.js / Express (P = V &times; I)</strong>
+          </div>
+          <div class="meta-box">
+            <span>AI Copilot Engine</span>
+            <strong>Groq Llama &bull; INR (₹) Tariff</strong>
+          </div>
+        </div>
+      </div>
+      <div class="slide-foot">
+        <span>S-3 IOT Engineering Capstone Presentation</span>
+        <span class="mono">Confidential &bull; Academic & Engineering Review</span>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SLIDE 2: CONTENTS / AGENDA                 -->
+    <!-- ========================================== -->
+    <section class="slide-container" id="slide-2">
+      <div class="slide-head">
+        <div class="slide-category">📋 Presentation Agenda</div>
+        <h2 class="slide-title">Table of Contents</h2>
+        <p class="slide-subtitle">A structured overview of the S-3 IOT system engineering, methodology, and results</p>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="panel-card" onclick="goToSlide(3)" style="cursor: pointer;">
+            <h4><span class="tag-blue">01</span> Objective &amp; Problem Statement</h4>
+            <p>Industry pain points in conventional electrical metering, motor surge blind spots, and the S-3 IOT project mission.</p>
+          </div>
+          <div class="panel-card" onclick="goToSlide(4)" style="cursor: pointer;">
+            <h4><span class="tag-green">02</span> System Architecture &amp; Block Diagram</h4>
+            <p>Edge acquisition, Wi-Fi REST ingestion, single-source backend calculation engine, and Groq LLM integration.</p>
+          </div>
+          <div class="panel-card" onclick="goToSlide(5)" style="cursor: pointer;">
+            <h4><span class="tag-amber">03</span> Circuit Diagram &amp; Hardware Schematics</h4>
+            <p>ESP32 ADC interface, ACS712-5A Hall sensor divider network, voltage dividers, and dual DC load protection.</p>
+          </div>
+          <div class="panel-card" onclick="goToSlide(6)" style="cursor: pointer;">
+            <h4><span class="tag-purple">04</span> Experimental Results &amp; Verification</h4>
+            <p>Strict mathematical DC verification, motor state classification, trapezoidal energy integration, and Indian Rupee billing.</p>
+          </div>
+          <div class="panel-card" onclick="goToSlide(7)" style="cursor: pointer;">
+            <h4><span class="tag-blue">05</span> Conclusion &amp; Future Scope</h4>
+            <p>Summary of accomplishments, 3-phase AC expansion (CT Clamps), SSR active load protection, and TinyML edge intelligence.</p>
+          </div>
+          <div class="panel-card" onclick="goToSlide(8)" style="cursor: pointer;">
+            <h4><span class="tag-green">06</span> Live Demonstration &amp; Q&amp;A</h4>
+            <p>Interactive web dashboard walkthrough with responsive zero-scroll mobile view and autonomous AI queries.</p>
+          </div>
+        </div>
+      </div>
+      <div class="slide-foot">
+        <span>S-3 IOT &bull; Agenda</span>
+        <span class="mono">Navigation: Arrow Keys or Click Panels</span>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SLIDE 3: OBJECTIVE & PROBLEM STATEMENT    -->
+    <!-- ========================================== -->
+    <section class="slide-container" id="slide-3">
+      <div class="slide-head">
+        <div class="slide-category">🎯 Project Motivation</div>
+        <h2 class="slide-title">Objective &amp; Problem Statement</h2>
+        <p class="slide-subtitle">Bridging the gap between raw edge sensors and verifiable, AI-assisted electrical intelligence</p>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <!-- Problem Column -->
+          <div class="panel-card" style="border-left: 4px solid var(--accent-red);">
+            <h4 style="color: #f87171;">⚠️ Problem Statement</h4>
+            <ul>
+              <li><strong>Passive / Delayed Utility Data:</strong> Conventional smart meters provide post-facto monthly billing without instantaneous load-level breakdown.</li>
+              <li><strong>Critical Motor Fault Blindness:</strong> DC/AC inductive motors undergo extreme startup surges (1.5–2.5&times; nominal) and stall conditions (>2.5A) that cause thermal failure without real-time detection.</li>
+              <li><strong>AI Math Hallucinations in IoT:</strong> Off-the-shelf LLMs frequently invent sensor readings, confuse cumulative energy with instant power, or miscalculate tiered utility bills (e.g. KSEB slabs).</li>
+              <li><strong>Calibration Discrepancies:</strong> Sensor noise and uncalibrated divider ratios skew physical telemetry if left unvalidated by an edge-cloud mathematical contract.</li>
+            </ul>
+          </div>
+
+          <!-- Objective Column -->
+          <div class="panel-card" style="border-left: 4px solid var(--accent-green);">
+            <h4 style="color: #34d399;">🎯 Project Objectives</h4>
+            <ul>
+              <li><strong>High-Speed Dual-Load Telemetry:</strong> Continuously sample DC LED fixture and 5V DC Motor current and voltage at 1 Hz using ESP32 ADC.</li>
+              <li><strong>Deterministic Single Source of Truth:</strong> Execute strict mathematical DC formulas ($P = V \times I$) and timestamp-based trapezoidal integration ($\Delta E = \frac{P_1 + P_2}{2} \times \Delta t$) in a Node.js backend.</li>
+              <li><strong>Cloud Aggregation &amp; Persistence:</strong> Stream 1-minute statistical aggregates (Min/Max/Avg) to Firebase RTDB and persist accumulator state across restarts.</li>
+              <li><strong>Autonomous AI Energy Copilot:</strong> Feed structured JSON to Groq AI (`openai/gpt-oss-120b`) for zero-hallucination energy auditing and Indian Rupee (₹8.00/kWh) projections.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="slide-foot">
+        <span>S-3 IOT &bull; Problem &amp; Objectives</span>
+        <span class="mono">Target Tariff: ₹8.00 / Unit (INR)</span>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SLIDE 4: SYSTEM BLOCK DIAGRAM              -->
+    <!-- ========================================== -->
+    <section class="slide-container" id="slide-4">
+      <div class="slide-head">
+        <div class="slide-category">🏗️ System Architecture</div>
+        <h2 class="slide-title">System Block Diagram</h2>
+        <p class="slide-subtitle">Four-tier architecture: Edge Acquisition &bull; Cloud Storage &bull; Backend Engine &bull; AI Dashboard</p>
+      </div>
+      <div class="slide-body">
+        <div class="diagram-wrap">
+          <svg viewBox="0 0 960 380" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="20" y="20" width="200" height="340" rx="12" fill="#131b2e" stroke="#24304f" stroke-width="2"/>
+            <text x="120" y="50" fill="#38bdf8" font-size="14" font-weight="bold" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">1. PHYSICAL EDGE</text>
+
+            <rect x="260" y="20" width="200" height="340" rx="12" fill="#131b2e" stroke="#24304f" stroke-width="2"/>
+            <text x="360" y="50" fill="#34d399" font-size="14" font-weight="bold" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">2. MICROCONTROLLER</text>
+
+            <rect x="500" y="20" width="200" height="340" rx="12" fill="#131b2e" stroke="#24304f" stroke-width="2"/>
+            <text x="600" y="50" fill="#fbbf24" font-size="14" font-weight="bold" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">3. CLOUD &amp; BACKEND</text>
+
+            <rect x="740" y="20" width="200" height="340" rx="12" fill="#131b2e" stroke="#24304f" stroke-width="2"/>
+            <text x="840" y="50" fill="#a78bfa" font-size="14" font-weight="bold" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">4. AI &amp; DASHBOARD</text>
+
+            <!-- Box 1: Loads & Sensors -->
+            <rect x="35" y="75" width="170" height="60" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+            <text x="120" y="100" fill="#fff" font-size="12" font-weight="600" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">DC LED Fixture</text>
+            <text x="120" y="120" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="'JetBrains Mono', monospace">Load 1 (Nominal 0.4A)</text>
+
+            <rect x="35" y="150" width="170" height="60" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+            <text x="120" y="175" fill="#fff" font-size="12" font-weight="600" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">5V DC Motor / Pump</text>
+            <text x="120" y="195" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="'JetBrains Mono', monospace">Load 2 (0.1–5.0A)</text>
+
+            <rect x="35" y="225" width="170" height="115" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+            <text x="120" y="250" fill="#38bdf8" font-size="12" font-weight="bold" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">SENSING MODULES</text>
+            <text x="120" y="275" fill="#fff" font-size="11" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">&bull; 2&times; ACS712 5A Hall</text>
+            <text x="120" y="295" fill="#fff" font-size="11" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">&bull; 2&times; Voltage Dividers</text>
+            <text x="120" y="320" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="'JetBrains Mono', monospace">10k/10k Divider Safe</text>
+
+            <!-- Box 2: ESP32 -->
+            <rect x="275" y="75" width="170" height="265" rx="8" fill="#1e293b" stroke="#34d399" stroke-width="1.5"/>
+            <text x="360" y="105" fill="#34d399" font-size="13" font-weight="bold" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">ESP32 SOC</text>
+            <text x="360" y="135" fill="#fff" font-size="11" text-anchor="middle" font-family="'JetBrains Mono', monospace">GPIO 32: LED Current</text>
+            <text x="360" y="155" fill="#fff" font-size="11" text-anchor="middle" font-family="'JetBrains Mono', monospace">GPIO 33: Pump Current</text>
+            <text x="360" y="175" fill="#fff" font-size="11" text-anchor="middle" font-family="'JetBrains Mono', monospace">GPIO 34: LED Voltage</text>
+            <text x="360" y="195" fill="#fff" font-size="11" text-anchor="middle" font-family="'JetBrains Mono', monospace">GPIO 35: Pump Voltage</text>
+            <line x1="295" y1="215" x2="425" y2="215" stroke="#334155" stroke-width="1"/>
+            <text x="360" y="235" fill="#94a3b8" font-size="11" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">1000ms Sampling</text>
+            <text x="360" y="255" fill="#94a3b8" font-size="11" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">Minute Slices (Min/Max)</text>
+            <rect x="295" y="280" width="130" height="40" rx="6" fill="#065f46" stroke="#34d399" stroke-width="1"/>
+            <text x="360" y="305" fill="#fff" font-size="11" font-weight="bold" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">Wi-Fi HTTP Client</text>
+
+            <!-- Box 3: Cloud & Backend -->
+            <rect x="515" y="75" width="170" height="120" rx="8" fill="#1e293b" stroke="#fbbf24" stroke-width="1.5"/>
+            <text x="600" y="105" fill="#fbbf24" font-size="12" font-weight="bold" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">Firebase RTDB</text>
+            <text x="600" y="130" fill="#fff" font-size="11" text-anchor="middle" font-family="'JetBrains Mono', monospace">/aggregates/minute</text>
+            <text x="600" y="150" fill="#fff" font-size="11" text-anchor="middle" font-family="'JetBrains Mono', monospace">/live telemetry</text>
+            <text x="600" y="175" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">Cloud Datastore</text>
+
+            <rect x="515" y="210" width="170" height="130" rx="8" fill="#1e293b" stroke="#fbbf24" stroke-width="1.5"/>
+            <text x="600" y="235" fill="#fbbf24" font-size="12" font-weight="bold" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">Node.js Engine</text>
+            <text x="600" y="258" fill="#fff" font-size="11" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">Strict Math: P = V &times; I</text>
+            <text x="600" y="278" fill="#fff" font-size="11" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">Trapezoidal &Delta;E (kWh)</text>
+            <text x="600" y="298" fill="#fff" font-size="11" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">State File Persistence</text>
+            <text x="600" y="322" fill="#38bdf8" font-size="10" font-weight="600" text-anchor="middle" font-family="'JetBrains Mono', monospace">Motor Classifier</text>
+
+            <!-- Box 4: UI & AI -->
+            <rect x="755" y="75" width="170" height="120" rx="8" fill="#1e293b" stroke="#a78bfa" stroke-width="1.5"/>
+            <text x="840" y="105" fill="#a78bfa" font-size="12" font-weight="bold" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">Groq AI Copilot</text>
+            <text x="840" y="130" fill="#fff" font-size="11" text-anchor="middle" font-family="'JetBrains Mono', monospace">openai/gpt-oss-120b</text>
+            <text x="840" y="152" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">Structured JSON Contract</text>
+            <text x="840" y="175" fill="#34d399" font-size="10" font-weight="bold" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">Zero Hallucinations</text>
+
+            <rect x="755" y="210" width="170" height="130" rx="8" fill="#1e293b" stroke="#a78bfa" stroke-width="1.5"/>
+            <text x="840" y="235" fill="#a78bfa" font-size="12" font-weight="bold" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">S-3 IOT Web UI</text>
+            <text x="840" y="258" fill="#fff" font-size="11" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">Desktop 100vh Fit</text>
+            <text x="840" y="278" fill="#fff" font-size="11" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">Zero-Scroll Mobile Tabs</text>
+            <text x="840" y="298" fill="#fff" font-size="11" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">Pinned Bottom Input Bar</text>
+            <text x="840" y="322" fill="#fbbf24" font-size="10" font-weight="bold" text-anchor="middle" font-family="'JetBrains Mono', monospace">Tariff Engine: ₹8.00/U</text>
+
+            <!-- Connecting Arrows -->
+            <line x1="205" y1="205" x2="275" y2="205" stroke="#38bdf8" stroke-width="2.5"/>
+            <line x1="445" y1="135" x2="515" y2="135" stroke="#34d399" stroke-width="2.5"/>
+            <line x1="600" y1="195" x2="600" y2="210" stroke="#fbbf24" stroke-width="2.5"/>
+            <line x1="685" y1="275" x2="755" y2="275" stroke="#fbbf24" stroke-width="2.5"/>
+            <line x1="685" y1="250" x2="755" y2="135" stroke="#a78bfa" stroke-width="2.5"/>
+          </svg>
+        </div>
+      </div>
+      <div class="slide-foot">
+        <span>S-3 IOT &bull; System Architecture</span>
+        <span class="mono">Edge-to-Cloud Realtime Data Pipeline</span>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SLIDE 5: CIRCUIT DIAGRAM & SCHEMATICS      -->
+    <!-- ========================================== -->
+    <section class="slide-container" id="slide-5">
+      <div class="slide-head">
+        <div class="slide-category">⚡ Hardware Schematics</div>
+        <h2 class="slide-title">Circuit Diagram &amp; Pinout</h2>
+        <p class="slide-subtitle">Precision interfacing: ACS712-5A Hall sensors, safe voltage dividers, and load switching</p>
+      </div>
+      <div class="slide-body">
+        <div class="diagram-wrap">
+          <svg viewBox="0 0 960 380" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="40" y1="40" x2="920" y2="40" stroke="#ef4444" stroke-width="3"/>
+            <text x="60" y="30" fill="#ef4444" font-size="12" font-weight="bold" font-family="'JetBrains Mono', monospace">+5V DC POWER RAIL</text>
+
+            <line x1="40" y1="350" x2="920" y2="350" stroke="#64748b" stroke-width="3"/>
+            <text x="60" y="370" fill="#94a3b8" font-size="12" font-weight="bold" font-family="'JetBrains Mono', monospace">COMMON GROUND (GND)</text>
+
+            <!-- ESP32 Core Box -->
+            <rect x="420" y="80" width="200" height="230" rx="10" fill="#131b2e" stroke="#34d399" stroke-width="2"/>
+            <text x="520" y="110" fill="#34d399" font-size="14" font-weight="bold" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">ESP32 30-PIN MCU</text>
+            <text x="440" y="145" fill="#38bdf8" font-size="11" font-family="'JetBrains Mono', monospace">GPIO 32 (ADC1_CH4)</text>
+            <text x="440" y="180" fill="#38bdf8" font-size="11" font-family="'JetBrains Mono', monospace">GPIO 33 (ADC1_CH5)</text>
+            <text x="440" y="215" fill="#fbbf24" font-size="11" font-family="'JetBrains Mono', monospace">GPIO 34 (ADC1_CH6)</text>
+            <text x="440" y="250" fill="#fbbf24" font-size="11" font-family="'JetBrains Mono', monospace">GPIO 35 (ADC1_CH7)</text>
+            <text x="520" y="285" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="'JetBrains Mono', monospace">3.3V ADC Range Safe</text>
+
+            <!-- Load 1: DC LED Fixture & Sensor -->
+            <rect x="60" y="80" width="150" height="100" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+            <text x="135" y="105" fill="#38bdf8" font-size="12" font-weight="bold" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">ACS712 5A (LED)</text>
+            <text x="135" y="125" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="'JetBrains Mono', monospace">IP+ &rarr; In-Series &rarr; IP-</text>
+            <text x="135" y="145" fill="#fff" font-size="10" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">LED Fixture (0.4A)</text>
+            <text x="135" y="165" fill="#a78bfa" font-size="9" text-anchor="middle" font-family="'JetBrains Mono', monospace">10k/10k Divider &rarr; 32</text>
+
+            <!-- Voltage Divider 1 -->
+            <rect x="230" y="80" width="150" height="100" rx="8" fill="#1e293b" stroke="#fbbf24" stroke-width="1.5"/>
+            <text x="305" y="105" fill="#fbbf24" font-size="12" font-weight="bold" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">Voltage Sensor 1</text>
+            <text x="305" y="125" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="'JetBrains Mono', monospace">R1: 30k&Omega; &bull; R2: 7.5k&Omega;</text>
+            <text x="305" y="145" fill="#fff" font-size="10" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">Ratio 5:1 Step-down</text>
+            <text x="305" y="165" fill="#a78bfa" font-size="9" text-anchor="middle" font-family="'JetBrains Mono', monospace">Output &rarr; GPIO 34</text>
+
+            <!-- Load 2: 5V DC Motor & Sensor -->
+            <rect x="60" y="210" width="150" height="100" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+            <text x="135" y="235" fill="#38bdf8" font-size="12" font-weight="bold" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">ACS712 5A (Motor)</text>
+            <text x="135" y="255" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="'JetBrains Mono', monospace">IP+ &rarr; In-Series &rarr; IP-</text>
+            <text x="135" y="275" fill="#fff" font-size="10" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">5V DC Motor / Pump</text>
+            <text x="135" y="295" fill="#a78bfa" font-size="9" text-anchor="middle" font-family="'JetBrains Mono', monospace">10k/10k Divider &rarr; 33</text>
+
+            <!-- Voltage Divider 2 -->
+            <rect x="230" y="210" width="150" height="100" rx="8" fill="#1e293b" stroke="#fbbf24" stroke-width="1.5"/>
+            <text x="305" y="235" fill="#fbbf24" font-size="12" font-weight="bold" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">Voltage Sensor 2</text>
+            <text x="305" y="255" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="'JetBrains Mono', monospace">10k&Omega; / 15k&Omega; Divider</text>
+            <text x="305" y="275" fill="#fff" font-size="10" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">Flyback 1N4007 Diode</text>
+            <text x="305" y="295" fill="#a78bfa" font-size="9" text-anchor="middle" font-family="'JetBrains Mono', monospace">Output &rarr; GPIO 35</text>
+
+            <!-- Connections to ESP32 -->
+            <path d="M210 130 H 420" stroke="#38bdf8" stroke-width="2"/>
+            <path d="M210 260 H 420" stroke="#38bdf8" stroke-width="2"/>
+            <path d="M380 150 H 420" stroke="#fbbf24" stroke-width="2"/>
+            <path d="M380 230 H 420" stroke="#fbbf24" stroke-width="2"/>
+
+            <!-- Right Box: Protection & Power Logic -->
+            <rect x="680" y="80" width="220" height="230" rx="10" fill="#131b2e" stroke="#24304f" stroke-width="2"/>
+            <text x="790" y="110" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif">ELECTRICAL SAFETY</text>
+            <text x="700" y="145" fill="#f87171" font-size="11" font-weight="600">&bull; ACS712 5V Protection:</text>
+            <text x="715" y="165" fill="#94a3b8" font-size="10" font-family="'JetBrains Mono', monospace">10k/10k divider halves</text>
+            <text x="715" y="180" fill="#94a3b8" font-size="10" font-family="'JetBrains Mono', monospace">5V output to &le;2.5V safe</text>
+
+            <text x="700" y="210" fill="#fbbf24" font-size="11" font-weight="600">&bull; Inductive Kickback:</text>
+            <text x="715" y="230" fill="#94a3b8" font-size="10" font-family="'JetBrains Mono', monospace">1N4007 Flyback across</text>
+            <text x="715" y="245" fill="#94a3b8" font-size="10" font-family="'JetBrains Mono', monospace">DC motor clamps spikes</text>
+
+            <text x="700" y="275" fill="#34d399" font-size="11" font-weight="600">&bull; Common Ground:</text>
+            <text x="715" y="295" fill="#94a3b8" font-size="10" font-family="'JetBrains Mono', monospace">Eliminates floating ADC</text>
+          </svg>
+        </div>
+      </div>
+      <div class="slide-foot">
+        <span>S-3 IOT &bull; Circuit Schematics</span>
+        <span class="mono">GPIO 32, 33, 34, 35 Interfacing</span>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SLIDE 6: RESULTS & EXPERIMENTAL DATA       -->
+    <!-- ========================================== -->
+    <section class="slide-container" id="slide-6">
+      <div class="slide-head">
+        <div class="slide-category">📊 Performance Verification</div>
+        <h2 class="slide-title">Experimental Results &amp; Verification</h2>
+        <p class="slide-subtitle">Deterministic formula validation, state classification, and accurate Indian Rupee billing</p>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <!-- Left: Telemetry & Power Verification Table -->
+          <div class="panel-card">
+            <h4>⚡ Verified Electrical Telemetry</h4>
+            <table class="table-custom">
+              <thead>
+                <tr>
+                  <th>Load Channel</th>
+                  <th>Current (I)</th>
+                  <th>Voltage (V)</th>
+                  <th>Calculated P (W)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>LED Fixture</strong></td>
+                  <td class="mono">0.393 A</td>
+                  <td class="mono">4.63 V</td>
+                  <td class="mono" style="color: #38bdf8;">1.820 W</td>
+                </tr>
+                <tr>
+                  <td><strong>5V Motor (Idle)</strong></td>
+                  <td class="mono">0.183 A</td>
+                  <td class="mono">1.18 V</td>
+                  <td class="mono" style="color: #34d399;">0.216 W</td>
+                </tr>
+                <tr>
+                  <td><strong>5V Motor (Nominal)</strong></td>
+                  <td class="mono">0.850 A</td>
+                  <td class="mono">5.00 V</td>
+                  <td class="mono" style="color: #34d399;">4.250 W</td>
+                </tr>
+                <tr>
+                  <td><strong>Combined Total</strong></td>
+                  <td class="mono">--</td>
+                  <td class="mono">--</td>
+                  <td class="mono" style="color: #fbbf24; font-weight: bold;">2.036 W</td>
+                </tr>
+              </tbody>
+            </table>
+            <p style="font-size: 0.78rem; margin-top: 6px;">
+              Formula: $P = V \times I$ strictly evaluated by Node.js backend. Discrepancies eliminated.
+            </p>
+          </div>
+
+          <!-- Right: Motor Classifier & Billing Engine -->
+          <div class="panel-card">
+            <h4>⚙️ Motor Classifier &amp; Billing Precision</h4>
+            <table class="table-custom">
+              <thead>
+                <tr>
+                  <th>Motor Operating State</th>
+                  <th>Current Range</th>
+                  <th>System Classification</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Standby / Off</td>
+                  <td class="mono">&lt; 0.05 A</td>
+                  <td><span class="badge-tag tag-purple">OFF</span></td>
+                </tr>
+                <tr>
+                  <td>Normal Pumping</td>
+                  <td class="mono">0.10 – 1.20 A</td>
+                  <td><span class="badge-tag tag-green">NORMAL RUNNING</span></td>
+                </tr>
+                <tr>
+                  <td>Startup Inrush Surge</td>
+                  <td class="mono">1.20 – 2.50 A</td>
+                  <td><span class="badge-tag tag-amber">STARTUP SURGE</span></td>
+                </tr>
+                <tr>
+                  <td>Motor Stall / Jam</td>
+                  <td class="mono">&gt; 2.50 A</td>
+                  <td><span class="badge-tag" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">STALL OVERLOAD</span></td>
+                </tr>
+              </tbody>
+            </table>
+            
+            <div style="margin-top: 12px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 8px; font-size: 0.8rem;">
+              <strong>💰 Tariff Accuracy:</strong> For 0.0987 kWh at flat ₹8.00/Unit, verified energy charge is <strong>₹0.79</strong> (resolved from erroneous ₹56.36).
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-foot">
+        <span>S-3 IOT &bull; Verification</span>
+        <span class="mono">Node.js Engine Single Source of Truth</span>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SLIDE 7: CONCLUSION & FUTURE SCOPE         -->
+    <!-- ========================================== -->
+    <section class="slide-container" id="slide-7">
+      <div class="slide-head">
+        <div class="slide-category">🚀 Summary &amp; Roadmap</div>
+        <h2 class="slide-title">Conclusion &amp; Future Scope</h2>
+        <p class="slide-subtitle">Achievements realized and prospective enhancements for industrial deployment</p>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <!-- Conclusion -->
+          <div class="panel-card" style="border-top: 4px solid var(--primary);">
+            <h4>✅ Project Accomplishments</h4>
+            <ul>
+              <li><strong>End-to-End IoT Pipeline:</strong> Successfully engineered an edge-to-cloud facility monitoring platform connecting ESP32 to Firebase RTDB and Groq AI.</li>
+              <li><strong>Eliminated Math Inconsistencies:</strong> Solved LLM hallucinations by centralizing calculations in a backend JSON data contract.</li>
+              <li><strong>High-Density UI:</strong> Designed a zero-scroll responsive web app with 100vh desktop fit, mobile tab switching, and locked bottom chat bar.</li>
+              <li><strong>Physical Fault Awareness:</strong> Validated classification for DC motor startup surge, nominal operation, and stall scenarios.</li>
+            </ul>
+          </div>
+
+          <!-- Future Scope -->
+          <div class="panel-card" style="border-top: 4px solid var(--accent-purple);">
+            <h4>🔮 Future Scope &amp; Industrialization</h4>
+            <ul>
+              <li><strong>3-Phase AC Grid Monitoring:</strong> Integrate non-invasive split-core Current Transformers (SCT-013) and PZEM-004T for 230V/415V utility monitoring.</li>
+              <li><strong>Active Solid-State Relay Tripping:</strong> Implement hardware relay interlocking to auto-trip loads upon detecting persistent motor stall (>2.5A for >3s).</li>
+              <li><strong>TinyML Edge Intelligence:</strong> Deploy on-device TensorFlow Lite Micro neural networks on ESP32 for offline anomaly detection without cloud dependence.</li>
+              <li><strong>KSEB Time-of-Day (ToD) Optimization:</strong> Automated load-shedding scheduling during peak tariff windows (6:00 PM – 10:00 PM).</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="slide-foot">
+        <span>S-3 IOT &bull; Roadmap</span>
+        <span class="mono">Next Steps: 3-Phase AC &bull; SSR Cutoff &bull; TinyML</span>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SLIDE 8: THANK YOU & Q&A                   -->
+    <!-- ========================================== -->
+    <section class="slide-container" id="slide-8">
+      <div class="slide-head"></div>
+      <div class="slide-body title-slide-content">
+        <div class="hero-badge" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #34d399;">
+          <span>🎉</span> ENGINEERING DEMONSTRATION COMPLETE
+        </div>
+        <h1 class="title-main" style="font-size: 3.8rem;">Thank You!</h1>
+        <p class="title-sub" style="font-size: 1.2rem;">
+          Questions, Feedback &amp; Technical Discussion
+        </p>
+
+        <div class="title-meta" style="max-width: 800px; margin: 0 auto;">
+          <div class="meta-box" style="text-align: left;">
+            <span>Project Repository</span>
+            <strong>github.com/aswanayyappan/S3-SKILL-PROJECT</strong>
+          </div>
+          <div class="meta-box" style="text-align: left;">
+            <span>Live Web Dashboard</span>
+            <strong>S-3 IOT on Render Cloud</strong>
+          </div>
+          <div class="meta-box" style="text-align: left;">
+            <span>Hardware Bench</span>
+            <strong>ESP32 &bull; ACS712-5A &bull; DC Loads</strong>
+          </div>
+        </div>
+
+        <div style="margin-top: 36px;">
+          <button class="btn-nav" onclick="goToSlide(1)" style="padding: 10px 24px; font-size: 0.95rem; background: var(--primary);">
+            <span>🔄</span> Restart Presentation
+          </button>
+        </div>
+      </div>
+      <div class="slide-foot">
+        <span>S-3 IOT &bull; Q&amp;A Session</span>
+        <span class="mono">Open for Technical Questions</span>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Slide Navigation Dots Indicator -->
+  <div class="nav-dots" id="dotsContainer">
+    <div class="dot active" onclick="goToSlide(1)" title="Slide 1: Title"></div>
+    <div class="dot" onclick="goToSlide(2)" title="Slide 2: Contents"></div>
+    <div class="dot" onclick="goToSlide(3)" title="Slide 3: Objective"></div>
+    <div class="dot" onclick="goToSlide(4)" title="Slide 4: Block Diagram"></div>
+    <div class="dot" onclick="goToSlide(5)" title="Slide 5: Circuit Diagram"></div>
+    <div class="dot" onclick="goToSlide(6)" title="Slide 6: Result"></div>
+    <div class="dot" onclick="goToSlide(7)" title="Slide 7: Conclusion"></div>
+    <div class="dot" onclick="goToSlide(8)" title="Slide 8: Thank You"></div>
+  </div>
+
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 8;
+
+    const slideIndicator = document.getElementById('slideIndicator');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const dots = document.querySelectorAll('.dot');
+
+    function updateSlide() {
+      // Toggle active slide container
+      document.querySelectorAll('.slide-container').forEach((el, idx) => {
+        el.classList.toggle('active', idx + 1 === currentSlide);
+      });
+
+      // Update dots
+      dots.forEach((dot, idx) => {
+        dot.classList.toggle('active', idx + 1 === currentSlide);
+      });
+
+      // Update counter
+      slideIndicator.textContent = `Slide ${currentSlide} of ${totalSlides}`;
+
+      // Update nav buttons disabled state
+      prevBtn.disabled = (currentSlide === 1);
+      nextBtn.disabled = (currentSlide === totalSlides);
+      prevBtn.style.opacity = currentSlide === 1 ? '0.4' : '1';
+      nextBtn.style.opacity = currentSlide === totalSlides ? '0.4' : '1';
+    }
+
+    function goToSlide(n) {
+      if (n >= 1 && n <= totalSlides) {
+        currentSlide = n;
+        updateSlide();
+      }
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        currentSlide++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        currentSlide--;
+        updateSlide();
+      }
+    }
+
+    prevBtn.addEventListener('click', prevSlide);
+    nextBtn.addEventListener('click', nextSlide);
+
+    // Keyboard navigation
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullscreen();
+      } else if (e.key >= '1' && e.key <= '8') {
+        goToSlide(parseInt(e.key));
+      }
+    });
+
+    // Fullscreen toggle
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.warn('Fullscreen request failed:', err);
+        });
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+    // Initialize
+    updateSlide();
+  </script>
+</body>
+</html>
