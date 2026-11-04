@@ -662,6 +662,9 @@
         <p class="slide-subtitle">Precision interfacing: ACS712-5A Hall sensors, safe voltage dividers, and load switching</p>
       </div>
       <div class="slide-body">
+        <div style="text-align: center; margin-bottom: 14px;">
+          <img src="circuit_diagram.png" alt="Solar Powered ESP32 Energy Monitoring System Circuit Diagram" style="max-height: 380px; width: 100%; object-fit: contain; border-radius: 8px; border: 1px solid var(--border);">
+        </div>
         <div class="grid-2">
           <!-- Left: Pin Table -->
           <div>
@@ -677,28 +680,28 @@
               </thead>
               <tbody>
                 <tr>
-                  <td><strong>LED Current</strong></td>
-                  <td>ACS712 5A Hall</td>
-                  <td class="mono">GPIO 32</td>
-                  <td>10k/10k Divider (Halved to &le;2.5V)</td>
-                </tr>
-                <tr>
-                  <td><strong>Motor Current</strong></td>
-                  <td>ACS712 5A Hall</td>
-                  <td class="mono">GPIO 33</td>
-                  <td>10k/10k Divider (0–5A Range)</td>
-                </tr>
-                <tr>
                   <td><strong>LED Voltage</strong></td>
                   <td>DC Voltage Module</td>
-                  <td class="mono">GPIO 34</td>
-                  <td>30k/7.5k Divider (5:1 Step-Down)</td>
+                  <td class="mono">GPIO 32</td>
+                  <td>5:1 Step-Down Divider</td>
                 </tr>
                 <tr>
                   <td><strong>Motor Voltage</strong></td>
                   <td>DC Voltage Module</td>
+                  <td class="mono">GPIO 33</td>
+                  <td>5:1 Step-Down Divider</td>
+                </tr>
+                <tr>
+                  <td><strong>LED Current</strong></td>
+                  <td>ACS712 5A Hall</td>
+                  <td class="mono">GPIO 34</td>
+                  <td>Halved / Conditioned to &le;2.5V</td>
+                </tr>
+                <tr>
+                  <td><strong>Motor Current</strong></td>
+                  <td>ACS712 5A Hall</td>
                   <td class="mono">GPIO 35</td>
-                  <td>10k/15k Divider + Flyback Diode</td>
+                  <td>Halved / Conditioned to &le;2.5V</td>
                 </tr>
               </tbody>
             </table>
@@ -706,11 +709,11 @@
 
           <!-- Right: Electrical Safety Box -->
           <div class="panel-card" style="border-left: 4px solid var(--primary);">
-            <h4 style="color: var(--primary);">⚡ Critical Electrical Safety Rules</h4>
+            <h4 style="color: var(--primary);">⚡ Solar Energy &amp; Electrical Architecture</h4>
             <ul>
-              <li><strong>ESP32 ADC 3.3V Overvoltage Protection:</strong> The ACS712 operates at 5V $V_{CC}$ and outputs 2.5V at zero current, reaching up to 4.5V under load. Connecting this directly to an ESP32 ADC pin would damage the MCU. A matched $10\text{k}\Omega/10\text{k}\Omega$ voltage divider scales the sensor output to $\le 2.5\text{V}$, safely below the 3.3V threshold.</li>
-              <li><strong>1N4007 Inductive Flyback Clamping:</strong> The DC motor generates negative inductive back-EMF spikes during de-energization. A 1N4007 reverse-biased diode is wired across motor terminals to absorb transient kickback.</li>
-              <li><strong>Star Common Ground:</strong> All sensor grounds, the 5V DC bench power supply, and ESP32 GND share a unified reference to eliminate floating ADC errors.</li>
+              <li><strong>Solar &amp; Battery Boost Line:</strong> 6V Solar Panel charges 3.7V Li-ion battery via TP4056 module; DC-DC booster produces clean 5V DC supplying both loads (LED &amp; DC motor).</li>
+              <li><strong>ADC 3.3V Overvoltage Protection:</strong> ACS712 sensors and voltage dividers safely condition all analog signals within the ESP32 ADC1 dynamic range (&le; 2.5V).</li>
+              <li><strong>Common Star Ground:</strong> TP4056, booster, sensors, ESP32, and loads share unified ground to eliminate ground loop voltage fluctuations.</li>
             </ul>
           </div>
         </div>

@@ -62,17 +62,12 @@
       </div>
     </header>
 
-    <!-- Main Navigation Bar (5 View Modes) -->
+    <!-- Main Navigation Bar (4 View Modes) -->
     <nav class="view-switcher-bar">
       <div class="tabs-group" role="tablist">
         <button class="view-tab active" data-view="overview" id="tabOverviewBtn">
           <span class="tab-icon">⚡</span>
           <span class="tab-text">Command Center</span>
-        </button>
-        <button class="view-tab" data-view="appliances" id="tabAppliancesBtn">
-          <span class="tab-icon">🔌</span>
-          <span class="tab-text">Physical Bench</span>
-          <span class="tab-pill" id="applianceCountBadge">2</span>
         </button>
         <button class="view-tab" data-view="anomalies" id="tabAnomaliesBtn">
           <span class="tab-icon">🚨</span>
@@ -280,7 +275,7 @@
             </div>
             <div class="device-foot-stats">
               <span>Energy Source: <strong style="color: #0284c7;">Direct Solar Rail</strong></span>
-              <span>Sense Pin: <strong>GPIO 32</strong> (ACS712 5A)</span>
+              <span>Sense Pins: <strong>GPIO 32 (V) / GPIO 34 (I)</strong></span>
               <span>Avg Current: <strong id="ledAvgCurrent">0.00A</strong></span>
             </div>
           </div>
@@ -321,27 +316,8 @@
             </div>
             <div class="device-foot-stats">
               <span>Energy Source: <strong style="color: #10b981;">Direct Solar Rail</strong></span>
-              <span>Sense Pin: <strong>GPIO 33</strong> (ACS712 5A)</span>
+              <span>Sense Pins: <strong>GPIO 33 (V) / GPIO 35 (I)</strong></span>
               <span>Motor State: <strong id="motorStateClassified">OFF (&lt;0.05A)</strong></span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Hardware Bench Grounding & Power Isolation Banner -->
-        <div class="card" style="padding: 16px 20px; background: var(--bg-card);">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-            <div>
-              <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary); margin-bottom: 2px;">
-                ⚡ Hardware Bench Telemetry Grounding &amp; Power Architecture
-              </h4>
-              <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.5;">
-                Solar power strictly supplies monitored loads (DC LED Fixture &amp; DC Motor) &bull; ESP32 is powered via independent external 5V rail (isolated from solar drain) &bull; Star common ground reference unites ADC conditioning
-              </p>
-            </div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <span class="badge-mini-real">☀️ Solar Rail: LED &amp; DC Motor</span>
-              <span class="badge-mini-bias" style="background: rgba(59, 130, 246, 0.15); color: #2563eb;">🔌 ESP32: External 5V Isolated</span>
-              <span class="badge-mini-bias" style="background: rgba(16, 185, 129, 0.15); color: #059669;">🛡️ Zero-Bias Deadband: Active</span>
             </div>
           </div>
         </div>
@@ -349,9 +325,15 @@
         <!-- Quick Telemetry Simulation Bar -->
         <div class="card sim-card" style="margin-top: 4px;">
           <div class="sim-header">
-            <div class="sim-title">⚙️ Bench Testing &amp; Anomaly Simulator</div>
+            <div class="sim-title">⚙️ Telemetry &amp; Anomaly Simulator</div>
             <div class="sim-actions">
-              <button class="btn-micro" onclick="triggerSimulation(0.393, 4.63, 0.183, 1.18)">Bench Baseline</button>
+              <button class="btn-micro" onclick="triggerSimulation(0.393, 4.63, 0.183, 1.18)">System Baseline</button>
+              <button class="btn-micro btn-warn" onclick="triggerSimulation(0.393, 4.63, 1.85, 5.0)">Motor Surge (1.85A)</button>
+              <button class="btn-micro btn-danger" onclick="triggerSimulation(0.393, 4.63, 3.20, 4.8)">Motor Stall (3.2A)</button>
+              <button class="btn-micro" onclick="triggerSimulation(0, 0, 0, 0)">Power OFF</button>
+            </div>
+          </div>
+        </div>
               <button class="btn-micro btn-warn" onclick="triggerSimulation(0.393, 4.63, 1.85, 5.0)">Motor Surge (1.85A)</button>
               <button class="btn-micro btn-danger" onclick="triggerSimulation(0.393, 4.63, 3.20, 4.8)">Motor Stall (3.2A)</button>
               <button class="btn-micro" onclick="triggerSimulation(0, 0, 0, 0)">Power OFF</button>
@@ -361,49 +343,7 @@
       </div>
     </main>
 
-    <!-- ======================================================== -->
-    <!-- VIEW 2: SMART APPLIANCES & SWITCHES (from idea.txt)     -->
-    <!-- ======================================================== -->
-    <main class="view-container" id="view-appliances">
-      <div class="view-intro-banner">
-        <div>
-          <h2>Multi-Appliance Smart Electrical Architecture</h2>
-          <p>Individual switch monitoring, physical bench telemetry, and predictive health assessment</p>
-        </div>
-        <div class="banner-stat">
-          <span>Active Nodes:</span>
-          <strong>2 Real Bench Loads (Zero Mock)</strong>
-        </div>
-      </div>
 
-      <!-- REAL PHYSICAL BENCH LOADS -->
-      <div class="section-category-header">
-        <div class="category-heading">
-          <span class="badge-source-real">🟢 PHYSICAL HARDWARE BENCH</span>
-          <h3>ESP32 ADC Monitored Loads</h3>
-        </div>
-        <span class="category-desc">Directly wired to ACS712 current sensors &amp; voltage dividers on ESP32 ADC1</span>
-      </div>
-      <div class="appliances-grid" id="realAppliancesContainer">
-        <!-- Rendered dynamically by app.js -->
-        <div class="loading-state">Loading real physical bench loads...</div>
-      </div>
-
-      <!-- Zero-Bias Noise Calibration Info Banner -->
-      <div class="card" style="margin-top: 20px; padding: 16px 20px; border-left: 4px solid var(--success);">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-          <div>
-            <h4 style="font-size: 0.92rem; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-              <span>🛡️</span> Zero-Bias Sensor Rectification Active
-            </h4>
-            <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">
-              Off-time floating ADC voltage (&le; 2.0V) and ACS712 midpoint quiescent drift (&le; 0.28A) are automatically suppressed to <strong>0.00V &amp; 0.000A</strong> to eliminate false kWh accumulation.
-            </p>
-          </div>
-          <button class="btn btn-secondary btn-sm" onclick="switchView('mcp')">Configure Bias in PyTorch/MCP Tab ↗</button>
-        </div>
-      </div>
-    </main>
 
     <!-- ======================================================== -->
     <!-- VIEW 3: ML ANOMALY & EVENT DETECTION LOG                 -->
@@ -706,13 +646,13 @@
         <div class="card schematic-card">
           <div class="schematic-header">
             <div>
-              <h3>ESP32 Pinout &amp; Hardware Circuit Schematic</h3>
-              <p>ACS712 10k/10k divider protection &bull; 1N4007 flyback diode &bull; Star ground</p>
+              <h3>Solar Powered ESP32 Energy Monitoring System – Circuit Diagram</h3>
+              <p>Solar Panel (6V) &bull; TP4056 Module &bull; 18650 Li-ion &bull; DC-DC 5V Booster &bull; Dual ACS712 &amp; Voltage Sensors &bull; ESP32 Cloud</p>
             </div>
             <a href="circuit_diagram.png" target="_blank" class="btn btn-secondary btn-sm">Full Image ↗</a>
           </div>
           <div class="schematic-img-wrap">
-            <img src="circuit_diagram.png" alt="S-3 IOT Circuit Diagram" loading="lazy">
+            <img src="circuit_diagram.png" alt="Solar Powered ESP32 Energy Monitoring System Circuit Diagram" loading="lazy">
           </div>
         </div>
 

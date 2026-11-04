@@ -120,7 +120,6 @@ function switchView(targetViewId) {
   localStorage.setItem('s3_active_view', targetViewId);
 
   // Auto-refresh when entering specific views
-  if (targetViewId === 'appliances') fetchAppliances();
   if (targetViewId === 'anomalies') fetchEvents();
   if (targetViewId === 'mcp') {
     fetchPyTorchLive();
@@ -800,7 +799,8 @@ document.getElementById('refreshBtn').addEventListener('click', () => {
 window.addEventListener('DOMContentLoaded', () => {
   initTheme();
   
-  const savedView = localStorage.getItem('s3_active_view') || 'overview';
+  let savedView = localStorage.getItem('s3_active_view') || 'overview';
+  if (savedView === 'appliances' || savedView === 'chat') savedView = 'overview';
   switchView(savedView);
 
   // Initial fetches
