@@ -617,14 +617,14 @@
     <!-- VIEW 4: PYTORCH NEURAL ENGINE & MCP CHATGPT INTEGRATION   -->
     <!-- ======================================================== -->
     <main class="view-container" id="view-mcp">
-      <div class="view-intro-banner" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);">
+      <div class="view-intro-banner">
         <div>
           <h2>PyTorch Transformer Model &amp; MCP ChatGPT Action Center</h2>
           <p>Trained neural network state classification, sensor bias noise clamping, and official Model Context Protocol integration</p>
         </div>
         <div class="banner-stat">
           <span>Framework:</span>
-          <strong style="color: #f97316;">PyTorch 2.15.0+cpu &bull; 97.14% Val Acc</strong>
+          <strong id="pyFrameworkBadge">PyTorch 2.15.0+cpu</strong> &bull; <strong id="pyHeroAccuracyBadge" style="color: var(--color-emerald);">97.22% Val Acc</strong>
         </div>
       </div>
 
@@ -641,14 +641,14 @@
                 <p>Multi-Head Self-Attention Neural Network (64-dim, 4 heads, 2 layers)</p>
               </div>
             </div>
-            <span class="badge-source-real">97.14% ACCURACY</span>
+            <span class="badge-source-real" id="pyCardAccuracyBadge">97.22% ACCURACY</span>
           </div>
 
           <div class="pytorch-stats-grid">
             <div class="p-stat-box">
               <span>TRAINED ON</span>
               <strong>Firebase RTDB</strong>
-              <small>230 Real Samples</small>
+              <small id="pyCardSamplesCount">234 Real Samples</small>
             </div>
             <div class="p-stat-box">
               <span>WEIGHTS</span>
@@ -762,7 +762,7 @@
           </div>
 
           <!-- Zero-Bias Deadband Calibration Controls -->
-          <div class="card" style="margin-top: 14px; background: var(--bg-card-alt); padding: 14px;">
+          <div class="mcp-subpanel" style="margin-top: 14px; background: var(--bg-card-alt); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <h4 style="font-size: 0.82rem; font-weight: 700; display: flex; align-items: center; gap: 6px;">
                 <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/></svg>
@@ -821,7 +821,7 @@
         </div>
 
         <!-- Metrics Row -->
-        <div class="pytorch-stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 14px;">
+        <div class="pytorch-stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 14px;">
           <div class="p-stat-box">
             <span>LEARNING CYCLES</span>
             <strong id="clTotalCycles">1 Completed</strong>

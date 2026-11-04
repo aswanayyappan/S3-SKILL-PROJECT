@@ -439,6 +439,10 @@ function updatePyTorchUI(res) {
   if (pyLiveBiasExplanation && b) {
     pyLiveBiasExplanation.innerHTML = `<strong>Sensor Zero-Bias:</strong> ${b.explanation} (LED: ${b.calibrated_led_voltage}V / ${b.calibrated_led_current}A &bull; Motor: ${b.calibrated_pump_voltage}V / ${b.calibrated_pump_current}A)`;
   }
+  if (res.framework) {
+    const fwBadge = document.getElementById('pyFrameworkBadge');
+    if (fwBadge) fwBadge.textContent = res.framework;
+  }
 }
 
 async function runCustomPyTorchInference() {
@@ -581,6 +585,22 @@ async function fetchContinuousLearningStatus() {
     if (newSamplesDeltaEl) newSamplesDeltaEl.textContent = `+${latest.new_samples_added || 0} Ingested`;
     if (accuracyEl && latest.val_accuracy !== undefined) accuracyEl.textContent = `${latest.val_accuracy}%`;
     if (lossValueEl && latest.val_loss !== undefined) lossValueEl.textContent = `Loss: ${latest.val_loss}`;
+
+    const pyHeroAcc = document.getElementById('pyHeroAccuracyBadge');
+    const pyCardAcc = document.getElementById('pyCardAccuracyBadge');
+    const pyCardSamples = document.getElementById('pyCardSamplesCount');
+    const pyFw = document.getElementById('pyFrameworkBadge');
+
+    if (latest.val_accuracy !== undefined) {
+      if (pyHeroAcc) pyHeroAcc.textContent = `${latest.val_accuracy}% Val Acc`;
+      if (pyCardAcc) pyCardAcc.textContent = `${latest.val_accuracy}% ACCURACY`;
+    }
+    if (latest.total_buffer_samples !== undefined && pyCardSamples) {
+      pyCardSamples.textContent = `${latest.total_buffer_samples} Real Samples`;
+    }
+    if (latest.framework && pyFw) {
+      pyFw.textContent = latest.framework;
+    }
 
     // Update interval buttons active state
     const mins = data.interval_minutes;
@@ -923,6 +943,12 @@ window.addEventListener('DOMContentLoaded', () => {
   setInterval(fetchTelemetry, 2500);
   setInterval(fetchPyTorchLive, 4000);
   setInterval(fetchContinuousLearningStatus, 5000);
+
+  // Set dynamic ChatGPT Custom GPT OpenAPI URL based on window.location
+  const chatgptOpenApiEl = document.getElementById('chatgptOpenApiUrl');
+  if (chatgptOpenApiEl) {
+    chatgptOpenApiEl.textContent = `${window.location.origin}/api/mcp/openapi.json`;
+  }
 
   // 10-minute web keep-alive heartbeat (prevents host sleep)
   setInterval(async () => {

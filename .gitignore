@@ -6,3 +6,5 @@ accumulator_state.json
 scratch/
 
 
+__pycache__/
+*.pyc
