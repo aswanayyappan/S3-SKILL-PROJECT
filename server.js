@@ -1410,7 +1410,7 @@ function startSelfKeepAlive() {
 
 app.listen(PORT, () => {
   console.log(`===============================================`);
-  console.log(`🚀 S-3 IOT Server [TEST BRANCH] running at: http://localhost:${PORT}`);
+  console.log(`🚀 S-3 IOT Server [MAIN] running at: http://localhost:${PORT}`);
   console.log(`📡 Connected to Firebase: ${FIREBASE_DB_URL}`);
   console.log(`⚡ Strict DC Power Engine: P = V * I`);
   console.log(`🧠 ML Event Detection & Multi-Appliance Engine Active`);

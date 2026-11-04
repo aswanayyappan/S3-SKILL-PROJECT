@@ -1,5 +1,5 @@
 // S-3 IOT - Next-Gen Solar Battery & Electrical AI Command Center
-// Active on 'test' branch
+// Active on 'main' branch
 
 let chatHistory = [];
 let localGroqKey = localStorage.getItem('groq_api_key') || '';

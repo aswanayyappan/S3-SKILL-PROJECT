@@ -881,3 +881,4 @@ with open('public/index.html', 'w', encoding='utf-8') as f:
     f.write(content)
 
 print('public/index.html updated successfully!')
+
