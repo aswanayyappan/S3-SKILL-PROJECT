@@ -1,0 +1,111 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "S-3 IOT Physical Bench & PyTorch Intelligence API",
+    "description": "Model Context Protocol (MCP) and ChatGPT Action Interface for the S-3 IOT Energy Monitoring System. Monitors real ESP32 ADC bench hardware (DC LED Fixture & 5V DC Water Pump Motor) with zero-bias noise removal and PyTorch Neural Network state inference.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local S-3 IOT Server"
+    }
+  ],
+  "paths": {
+    "/api/telemetry": {
+      "get": {
+        "operationId": "getLiveTelemetry",
+        "summary": "Get real-time physical bench telemetry",
+        "description": "Returns calibrated live voltages, currents, power, and energy readings from the ESP32 for the DC LED and 5V DC Water Pump Motor. Sensor zero-point noise (~1.18V, ~0.2A) is automatically clamped when loads are OFF.",
+        "responses": {
+          "200": {
+            "description": "Live telemetry data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mcp/power-bill": {
+      "get": {
+        "operationId": "getPowerAndBill",
+        "summary": "Calculate active power, energy units, and 30-day bill projection",
+        "description": "Calculates active power in Watts, cumulative kWh energy consumption, and projected monthly bill in Indian Rupees (₹8.00 per unit).",
+        "parameters": [
+          {
+            "name": "tariff_rate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 8.0
+            },
+            "description": "Tariff rate in ₹ per kWh"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Energy consumption and billing projection"
+          }
+        }
+      }
+    },
+    "/api/ml/predict": {
+      "post": {
+        "operationId": "predictElectricalAnomaly",
+        "summary": "Run PyTorch Transformer model inference",
+        "description": "Feeds voltage and current telemetry into the trained PyTorch S3ElectricalTransformer model to classify electrical state (IDLE_OFF, LED_ACTIVE, PUMP_NORMAL, PUMP_STARTUP_INRUSH, PUMP_STALL_OVERLOAD, SENSOR_BIAS_ANOMALY).",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "v_led": { "type": "number", "example": 1.18 },
+                  "c_led": { "type": "number", "example": 0.24 },
+                  "v_pump": { "type": "number", "example": 1.18 },
+                  "c_pump": { "type": "number", "example": 0.14 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "PyTorch model prediction and zero-bias rectification result"
+          }
+        }
+      }
+    },
+    "/api/calibration": {
+      "get": {
+        "operationId": "getSensorBiasCalibration",
+        "summary": "Get sensor zero-bias calibration status",
+        "description": "Returns current thresholds for eliminating off-time phantom voltage (1.18V) and current (0.2A) drift.",
+        "responses": {
+          "200": {
+            "description": "Current sensor calibration settings"
+          }
+        }
+      }
+    },
+    "/api/hardware/pins": {
+      "get": {
+        "operationId": "getHardwarePinout",
+        "summary": "Get ESP32 GPIO pinout and sensor mapping",
+        "description": "Returns GPIO pin assignments for ACS712 current sensors and resistor voltage dividers on ESP32 ADC1.",
+        "responses": {
+          "200": {
+            "description": "ESP32 pin configuration details"
+          }
+        }
+      }
+    }
+  }
+}

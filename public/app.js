@@ -28,6 +28,8 @@ const flowTotalPower = document.getElementById('flowTotalPower');
 const flowLedPower = document.getElementById('flowLedPower');
 const flowMotorPower = document.getElementById('flowMotorPower');
 const flowMotorState = document.getElementById('flowMotorState');
+const flowLedState = document.getElementById('flowLedState');
+const biasFlowBadge = document.getElementById('biasFlowBadge');
 
 // Load 1 (LED) Elements
 const ledPowerVal = document.getElementById('ledPowerVal');
@@ -49,10 +51,18 @@ const motorStateClassified = document.getElementById('motorStateClassified');
 
 // Containers
 const realAppliancesContainer = document.getElementById('realAppliancesContainer');
-const mockAppliancesContainer = document.getElementById('mockAppliancesContainer');
 const eventsTableBody = document.getElementById('eventsTableBody');
 const anomalyCountBadge = document.getElementById('anomalyCountBadge');
 const applianceCountBadge = document.getElementById('applianceCountBadge');
+
+// PyTorch & MCP UI Elements
+const pyLiveState = document.getElementById('pyLiveState');
+const pyLiveConfidence = document.getElementById('pyLiveConfidence');
+const pyLivePower = document.getElementById('pyLivePower');
+const pyLiveRisk = document.getElementById('pyLiveRisk');
+const pyLiveBiasExplanation = document.getElementById('pyLiveBiasExplanation');
+const pyTesterOutput = document.getElementById('pyTesterOutput');
+const mcpToolOutput = document.getElementById('mcpToolOutput');
 
 // Chat Elements (Mini & Full-Screen)
 const chatMessages = document.getElementById('chatMessages');
@@ -110,6 +120,10 @@ function switchView(targetViewId) {
   // Auto-refresh when entering specific views
   if (targetViewId === 'appliances') fetchAppliances();
   if (targetViewId === 'anomalies') fetchEvents();
+  if (targetViewId === 'mcp') {
+    fetchPyTorchLive();
+    loadBiasConfig();
+  }
 }
 
 viewTabs.forEach(tab => {
@@ -161,8 +175,27 @@ function updateUI(t) {
   flowTotalPower.textContent = `${totalWatts.toFixed(2)} W Total`;
   flowLedPower.textContent = `${(led.instantPowerWatts || 0).toFixed(2)} W`;
   flowMotorPower.textContent = `${(motor.instantPowerWatts || 0).toFixed(2)} W`;
-  flowMotorState.textContent = motor.status || 'OFF';
-  flowMotorState.className = `status-micro ${motor.status === 'NORMAL RUNNING' ? 'status-on' : (motor.status?.includes('STALL') ? 'status-danger' : '')}`;
+  
+  if (flowMotorState) {
+    flowMotorState.textContent = motor.status || 'OFF';
+    flowMotorState.className = `status-micro ${motor.status === 'NORMAL RUNNING' ? 'status-on' : (motor.status?.includes('STALL') ? 'status-danger' : '')}`;
+  }
+
+  if (flowLedState) {
+    flowLedState.textContent = led.status || 'OFF';
+    flowLedState.className = `status-micro ${led.status === 'ON' ? 'status-on' : ''}`;
+  }
+
+  if (biasFlowBadge && t.biasRectification) {
+    const b = t.biasRectification;
+    if (b.ledIdleClamped && b.motorIdleClamped) {
+      biasFlowBadge.textContent = "Zero-Bias: Clamped (1.18V/0.2A)";
+      biasFlowBadge.className = "badge-mini-bias bias-clamped";
+    } else {
+      biasFlowBadge.textContent = "Zero-Bias: Active Bench";
+      biasFlowBadge.className = "badge-mini-bias bias-active";
+    }
+  }
 
   // 4. Load 1: DC LED Card
   ledPowerVal.textContent = (led.instantPowerWatts || 0).toFixed(3);
@@ -197,22 +230,17 @@ function updateUI(t) {
 }
 
 // ========================================================
-// 4. SMART APPLIANCES FETCHER (Split Real vs Mock)
+// 4. PHYSICAL APPLIANCES FETCHER (Strictly Real Hardware)
 // ========================================================
 async function fetchAppliances() {
   try {
     const res = await fetch('/api/appliances');
     if (!res.ok) return;
     const json = await res.json();
-    if (json.success) {
-      if (realAppliancesContainer && Array.isArray(json.physical)) {
-        renderApplianceList(realAppliancesContainer, json.physical, true);
-      }
-      if (mockAppliancesContainer && Array.isArray(json.mock)) {
-        renderApplianceList(mockAppliancesContainer, json.mock, false);
-      }
-      if (applianceCountBadge && Array.isArray(json.appliances)) {
-        applianceCountBadge.textContent = json.appliances.length;
+    if (json.success && Array.isArray(json.physical)) {
+      renderApplianceList(realAppliancesContainer, json.physical);
+      if (applianceCountBadge) {
+        applianceCountBadge.textContent = json.physical.length;
       }
     }
   } catch (err) {
@@ -220,21 +248,16 @@ async function fetchAppliances() {
   }
 }
 
-function renderApplianceList(container, apps, isPhysical) {
+function renderApplianceList(container, apps) {
+  if (!container) return;
   if (!apps || apps.length === 0) {
-    container.innerHTML = `<div class="loading-state">No devices found in this category.</div>`;
+    container.innerHTML = `<div class="loading-state">No real bench devices detected.</div>`;
     return;
   }
 
   container.innerHTML = apps.map(app => {
-    const isReal = app.is_physical ?? isPhysical;
-    const badgeHtml = isReal
-      ? `<span class="badge-source-real">🟢 REAL HARDWARE</span>`
-      : `<span class="badge-source-mock">🧪 MOCK MODEL</span>`;
-    const borderClass = isReal ? 'card-real-border' : 'card-mock-border';
-
     return `
-      <div class="appliance-card ${borderClass}">
+      <div class="appliance-card card-real-border">
         <div class="app-card-head">
           <div class="app-meta">
             <div class="app-icon-wrap">${app.icon}</div>
@@ -244,15 +267,15 @@ function renderApplianceList(container, apps, isPhysical) {
             </div>
           </div>
           <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
-            ${badgeHtml}
-            <span class="device-status-badge ${app.status.includes('RUN') || app.status === 'ON' || app.status === 'DISCHARGING' ? 'status-on' : 'status-off'}">
+            <span class="badge-source-real">🟢 REAL HARDWARE</span>
+            <span class="device-status-badge ${app.status.includes('RUN') || app.status === 'ON' ? 'status-on' : 'status-off'}">
               ${app.status}
             </span>
           </div>
         </div>
 
         <div class="app-pin-banner">
-          ${isReal ? '⚡ Pin Connection: ' : '🔬 Simulation Architecture: '}<strong>${app.pin_info || 'GPIO Telemetry'}</strong>
+          ⚡ Pin Connection: <strong>${app.pin_info || 'ESP32 ADC1'}</strong>
         </div>
 
         <div class="app-power-banner">
@@ -292,19 +315,11 @@ function renderApplianceList(container, apps, isPhysical) {
 }
 
 // ========================================================
-// 5. ML ANOMALY EVENT LOG (with Real vs Mock Separation)
+// 5. ML ANOMALY EVENT LOG (Physical Bench Telemetry Only)
 // ========================================================
 async function fetchEvents(filter = currentFilter) {
   try {
-    let query = '';
-    if (filter === 'real') {
-      query = '?source_type=real';
-    } else if (filter === 'mock') {
-      query = '?source_type=mock';
-    } else if (filter && filter !== 'all') {
-      query = `?severity=${filter}`;
-    }
-
+    const query = filter && filter !== 'all' ? `?severity=${filter}` : '';
     const res = await fetch(`/api/events${query}`);
     if (!res.ok) return;
     const json = await res.json();
@@ -336,16 +351,12 @@ function renderEvents(events) {
     const sevClass = e.severity === 'critical' ? 'sev-critical' : (e.severity === 'medium' ? 'sev-medium' : 'sev-normal');
     const timeStr = new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const confPct = Math.round((e.model_confidence || 0.95) * 100);
-    const isReal = e.is_physical === true || e.source === 'REAL_ESP32_BENCH';
-    const sourceBadge = isReal
-      ? `<span class="tag-source-real">🟢 REAL BENCH</span>`
-      : `<span class="tag-source-mock">🧪 MOCK MODEL</span>`;
 
     return `
       <tr>
         <td><strong style="font-family: var(--font-mono); color: var(--primary);">${e.event_id}</strong></td>
         <td style="color: var(--text-muted); font-size: 0.78rem;">${timeStr}</td>
-        <td>${sourceBadge}</td>
+        <td><span class="tag-source-real">ESP32 ADC1</span></td>
         <td><strong>${e.appliance}</strong> <small style="color: var(--text-muted);">(${e.switch_id})</small></td>
         <td><code style="font-size: 0.76rem; color: var(--text-primary);">${e.event_type}</code></td>
         <td style="font-family: var(--font-mono); font-size: 0.78rem;">${Number(e.voltage).toFixed(2)}V &bull; ${Number(e.current).toFixed(3)}A &bull; <strong>${Number(e.power).toFixed(1)}W</strong></td>
@@ -367,6 +378,135 @@ function renderEvents(events) {
 function askAboutEvent(id, appliance, type) {
   switchView('chat');
   sendPrompt(`Explain event ${id}: What caused the '${type}' on ${appliance} and what corrective actions should be taken?`);
+}
+
+// ========================================================
+// 6. PYTORCH NEURAL MODEL & MCP INTEGRATION
+// ========================================================
+async function fetchPyTorchLive() {
+  try {
+    const res = await fetch('/api/ml/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    if (!res.ok) return;
+    const json = await res.json();
+    if (json.success && json.prediction) {
+      updatePyTorchUI(json);
+    }
+  } catch (err) {
+    console.warn('PyTorch inference fetch error:', err);
+  }
+}
+
+function updatePyTorchUI(res) {
+  const p = res.prediction;
+  const b = res.bias_rectification;
+
+  if (pyLiveState) {
+    pyLiveState.textContent = p.state_name;
+    pyLiveState.className = `pl-status-tag ${p.state_name === 'PUMP_STALL_OVERLOAD' ? 'status-danger' : (p.state_name.includes('INRUSH') || p.state_name.includes('BIAS') ? 'status-warn' : 'status-on')}`;
+  }
+  if (pyLiveConfidence) pyLiveConfidence.textContent = p.confidence_percent;
+  if (pyLivePower) pyLivePower.textContent = `${p.predicted_power_watts.toFixed(2)} W`;
+  if (pyLiveRisk) {
+    pyLiveRisk.textContent = p.anomaly_severity.toUpperCase();
+    pyLiveRisk.style.color = p.anomaly_severity === 'critical' ? 'var(--danger)' : (p.anomaly_severity === 'medium' ? 'var(--warning)' : 'var(--success)');
+  }
+  if (pyLiveBiasExplanation && b) {
+    pyLiveBiasExplanation.innerHTML = `<strong>Sensor Zero-Bias:</strong> ${b.explanation} (LED: ${b.calibrated_led_voltage}V / ${b.calibrated_led_current}A &bull; Pump: ${b.calibrated_pump_voltage}V / ${b.calibrated_pump_current}A)`;
+  }
+}
+
+async function runCustomPyTorchInference() {
+  const vLed = parseFloat(document.getElementById('testVLed').value) || 0;
+  const cLed = parseFloat(document.getElementById('testCLed').value) || 0;
+  const vPump = parseFloat(document.getElementById('testVPump').value) || 0;
+  const cPump = parseFloat(document.getElementById('testCPump').value) || 0;
+
+  if (pyTesterOutput) pyTesterOutput.textContent = '// Running PyTorch S3ElectricalTransformer inference...';
+  try {
+    const res = await fetch('/api/ml/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ v_led: vLed, c_led: cLed, v_pump: vPump, c_pump: cPump })
+    });
+    const json = await res.json();
+    if (pyTesterOutput) pyTesterOutput.textContent = JSON.stringify(json, null, 2);
+    if (json.prediction) updatePyTorchUI(json);
+  } catch (err) {
+    if (pyTesterOutput) pyTesterOutput.textContent = `Error: ${err.message}`;
+  }
+}
+
+function setTestPreset(v1, c1, v2, c2) {
+  document.getElementById('testVLed').value = v1;
+  document.getElementById('testCLed').value = c1;
+  document.getElementById('testVPump').value = v2;
+  document.getElementById('testCPump').value = c2;
+  runCustomPyTorchInference();
+}
+
+async function executeMcpTool(toolName) {
+  if (mcpToolOutput) mcpToolOutput.textContent = `// Invoking MCP tool '${toolName}'...`;
+  try {
+    const res = await fetch(`/api/mcp/tools/${toolName}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const json = await res.json();
+    if (mcpToolOutput) mcpToolOutput.textContent = JSON.stringify(json, null, 2);
+  } catch (err) {
+    if (mcpToolOutput) mcpToolOutput.textContent = `MCP Error: ${err.message}`;
+  }
+}
+
+function copyOpenApiUrl() {
+  const url = `${window.location.origin}/api/mcp/openapi.json`;
+  navigator.clipboard.writeText(url).then(() => {
+    alert(`Copied ChatGPT Custom GPT OpenAPI URL:\n${url}\n\nPaste this in ChatGPT Custom GPT Actions to enable instant MCP tool calls!`);
+  }).catch(() => {
+    prompt('Copy ChatGPT OpenAPI URL:', url);
+  });
+}
+
+async function loadBiasConfig() {
+  try {
+    const res = await fetch('/api/calibration');
+    const json = await res.json();
+    if (json.success && json.config) {
+      const vEl = document.getElementById('cfgVoltFloor');
+      const lEl = document.getElementById('cfgLedFloor');
+      const pEl = document.getElementById('cfgPumpFloor');
+      if (vEl) vEl.value = json.config.VOLTAGE_NOISE_FLOOR;
+      if (lEl) lEl.value = json.config.LED_CURRENT_NOISE_FLOOR;
+      if (pEl) pEl.value = json.config.PUMP_CURRENT_NOISE_FLOOR;
+    }
+  } catch (e) {}
+}
+
+async function saveBiasConfig() {
+  const vF = parseFloat(document.getElementById('cfgVoltFloor').value) || 2.0;
+  const lF = parseFloat(document.getElementById('cfgLedFloor').value) || 0.28;
+  const pF = parseFloat(document.getElementById('cfgPumpFloor').value) || 0.22;
+
+  try {
+    const res = await fetch('/api/calibration', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ voltage_floor: vF, led_current_floor: lF, pump_current_floor: pF, auto_clamp: true })
+    });
+    const json = await res.json();
+    if (json.success) {
+      alert('Physical sensor bias deadband thresholds saved successfully!');
+      fetchTelemetry();
+      fetchPyTorchLive();
+    }
+  } catch (err) {
+    alert(`Error saving calibration: ${err.message}`);
+  }
 }
 
 // ========================================================
@@ -530,7 +670,10 @@ window.addEventListener('DOMContentLoaded', () => {
   fetchTelemetry();
   fetchAppliances();
   fetchEvents();
+  fetchPyTorchLive();
+  loadBiasConfig();
 
-  // Continuous polling every 2.5 seconds
+  // Continuous polling
   setInterval(fetchTelemetry, 2500);
+  setInterval(fetchPyTorchLive, 4000);
 });

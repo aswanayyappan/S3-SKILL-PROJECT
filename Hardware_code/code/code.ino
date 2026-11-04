@@ -42,7 +42,10 @@ const float CURRENT_SENSITIVITY = 0.0925;
 const float VOLTAGE_MULTIPLIER = 8.3333;
 
 // Ignore small current noise
-const float CURRENT_DEADBAND = 0.05;
+// Physical sensor noise deadband calibration
+// Clamps off-time floating voltage (~1.18V - 1.8V) and ACS712 quiescent drift (~0.14A - 0.22A)
+const float CURRENT_DEADBAND = 0.22;
+const float VOLTAGE_DEADBAND = 2.00;
 
 // Current sensor zero offsets
 float ledCurrentOffset = 0;
@@ -186,6 +189,10 @@ float readVoltage(int pin) {
 
   float actualVoltage =
     adcVoltage * VOLTAGE_MULTIPLIER;
+
+  if (actualVoltage < VOLTAGE_DEADBAND) {
+    actualVoltage = 0.0;
+  }
 
   return actualVoltage;
 }

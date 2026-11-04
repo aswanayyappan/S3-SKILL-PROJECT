@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "s3-iot-energy": {
+      "command": "python",
+      "args": [
+        "c:\\programming\\SKILL S3\\mcp\\s3_iot_mcp_server.py"
+      ],
+      "env": {
+        "PYTHONIOENCODING": "utf-8"
+      }
+    }
+  }
+}

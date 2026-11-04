@@ -1311,6 +1311,263 @@ body {
   gap: 10px;
 }
 
+/* Zero-Bias Badges */
+.badge-mini-bias {
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.03em;
+}
+
+.bias-clamped {
+  background: rgba(16, 185, 129, 0.18);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.bias-active {
+  background: rgba(59, 130, 246, 0.18);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+/* ========================================================
+   VIEW 4: PYTORCH NEURAL ENGINE & MCP CHATGPT STYLES
+   ======================================================== */
+.mcp-grid-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.mcp-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+}
+
+.mcp-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+
+.mcp-head-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mcp-icon {
+  font-size: 1.8rem;
+}
+
+.mcp-head-title h3 {
+  font-size: 1.0rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.mcp-head-title p {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.pytorch-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.p-stat-box {
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.p-stat-box span {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.p-stat-box strong {
+  font-size: 0.95rem;
+  color: var(--primary);
+  font-family: var(--font-mono);
+}
+
+.p-stat-box small {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+}
+
+.pytorch-live-box {
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pl-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.pl-status-tag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+}
+
+.pl-metrics {
+  display: flex;
+  gap: 18px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.pl-metrics strong {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.pl-bias-note {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  border-top: 1px dashed var(--border);
+  padding-top: 6px;
+  line-height: 1.4;
+}
+
+.mcp-tool-tester {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.tester-inputs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+}
+
+.tester-inputs-grid label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.70rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  gap: 4px;
+}
+
+.tester-inputs-grid input {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.tester-inputs-grid input:focus {
+  border-color: var(--primary);
+}
+
+.mcp-output-pre {
+  background: #090d16;
+  color: #10b981;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  overflow-x: auto;
+  max-height: 180px;
+  margin-top: 10px;
+  line-height: 1.4;
+}
+
+.mcp-api-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.link-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: var(--bg-card-alt);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.li-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.li-code {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--primary);
+  background: rgba(59, 130, 246, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex: 1;
+}
+
+.mcp-tools-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tl-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.tools-btn-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1080px) {
+  .mcp-grid-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Responsive Breakpoints */
 @media (max-width: 1080px) {
   .content-split-grid {
