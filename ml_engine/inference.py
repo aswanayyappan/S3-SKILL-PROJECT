@@ -30,14 +30,17 @@ MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "weights",
 
 _cached_model = None
 _cached_metadata = None
+_cached_mtime = None
 
 def get_model():
-    global _cached_model, _cached_metadata
-    if _cached_model is not None:
-        return _cached_model, _cached_metadata
+    global _cached_model, _cached_metadata, _cached_mtime
 
     if not os.path.exists(MODEL_PATH):
         raise FileNotFoundError(f"Trained model not found at {MODEL_PATH}. Run ml_engine/train.py first!")
+
+    current_mtime = os.path.getmtime(MODEL_PATH)
+    if _cached_model is not None and _cached_mtime == current_mtime:
+        return _cached_model, _cached_metadata
 
     checkpoint = torch.load(MODEL_PATH, map_location=torch.device('cpu'), weights_only=False)
     
@@ -53,6 +56,7 @@ def get_model():
 
     _cached_model = model
     _cached_metadata = checkpoint
+    _cached_mtime = current_mtime
     return _cached_model, _cached_metadata
 
 def predict(v_led, c_led, v_pump, c_pump):
@@ -100,6 +104,7 @@ def predict(v_led, c_led, v_pump, c_pump):
         "success": True,
         "framework": "PyTorch 2.15.0+cpu",
         "model_architecture": "S3ElectricalTransformer (64-dim, 4 heads)",
+        "continuous_learning_cycle": meta.get("learning_cycle", 1),
         "inputs": {
             "v_led": round(v_led, 3),
             "c_led": round(c_led, 3),

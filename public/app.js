@@ -123,6 +123,7 @@ function switchView(targetViewId) {
   if (targetViewId === 'mcp') {
     fetchPyTorchLive();
     loadBiasConfig();
+    fetchContinuousLearningStatus();
   }
 }
 
@@ -510,7 +511,127 @@ async function saveBiasConfig() {
 }
 
 // ========================================================
-// 6. BENCH SIMULATION TRIGGER
+// 6.1 AUTONOMOUS CONTINUOUS ONLINE LEARNING CONTROLLER
+// ========================================================
+async function fetchContinuousLearningStatus() {
+  try {
+    const res = await fetch('/api/ml/continuous-learning/status');
+    if (!res.ok) return;
+    const data = await res.json();
+
+    const statusBadge = document.getElementById('clStatusBadge');
+    const totalCyclesEl = document.getElementById('clTotalCycles');
+    const lastLearnedTimeEl = document.getElementById('clLastLearnedTime');
+    const totalBufferEl = document.getElementById('clTotalBuffer');
+    const newSamplesDeltaEl = document.getElementById('clNewSamplesDelta');
+    const accuracyEl = document.getElementById('clAccuracy');
+    const lossValueEl = document.getElementById('clLossValue');
+    const spinner = document.getElementById('clLearningSpinner');
+    const btnTrigger = document.getElementById('btnTriggerLearn');
+
+    if (data.is_learning_in_progress) {
+      if (spinner) spinner.style.display = 'inline-flex';
+      if (btnTrigger) btnTrigger.disabled = true;
+      if (statusBadge) {
+        statusBadge.textContent = '🔄 FINE-TUNING IN PROGRESS...';
+        statusBadge.style.color = '#38bdf8';
+      }
+    } else {
+      if (spinner) spinner.style.display = 'none';
+      if (btnTrigger) btnTrigger.disabled = false;
+      if (statusBadge) {
+        if (data.active) {
+          statusBadge.textContent = `🟢 ACTIVE (EVERY ${data.interval_minutes} MIN)`;
+          statusBadge.style.color = 'var(--success)';
+        } else {
+          statusBadge.textContent = '⏸️ PAUSED (MANUAL ONLY)';
+          statusBadge.style.color = 'var(--warning)';
+        }
+      }
+    }
+
+    const latest = data.latest_cycle || {};
+    if (totalCyclesEl) totalCyclesEl.textContent = `${data.total_cycles_completed || 0} Cycles Completed`;
+    if (lastLearnedTimeEl && latest.timestamp) {
+      const dt = new Date(latest.timestamp);
+      lastLearnedTimeEl.textContent = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+    if (totalBufferEl) totalBufferEl.textContent = `${latest.total_buffer_samples || 234} Samples`;
+    if (newSamplesDeltaEl) newSamplesDeltaEl.textContent = `+${latest.new_samples_added || 0} Ingested`;
+    if (accuracyEl && latest.val_accuracy !== undefined) accuracyEl.textContent = `${latest.val_accuracy}%`;
+    if (lossValueEl && latest.val_loss !== undefined) lossValueEl.textContent = `Loss: ${latest.val_loss}`;
+
+    // Update interval buttons active state
+    const mins = data.interval_minutes;
+    [2, 5, 15, 30, 0].forEach(m => {
+      const btn = document.getElementById(`btnInt${m}`);
+      if (btn) {
+        btn.classList.toggle('active', (data.active && m === mins) || (!data.active && m === 0));
+      }
+    });
+
+    // Populate timeline table
+    const tbody = document.getElementById('clHistoryTableBody');
+    if (tbody && Array.isArray(data.recent_history) && data.recent_history.length > 0) {
+      tbody.innerHTML = data.recent_history.map(item => `
+        <tr>
+          <td><strong>Cycle #${item.cycle}</strong></td>
+          <td class="mono">${new Date(item.timestamp).toLocaleTimeString()}</td>
+          <td><span class="badge-tag tag-blue">+${item.new_samples_added || 0} Samples</span></td>
+          <td class="mono">${item.total_buffer_samples} Points</td>
+          <td class="mono">${item.val_loss}</td>
+          <td class="mono" style="color: var(--success); font-weight: bold;">${item.val_accuracy}%</td>
+          <td><span class="badge-tag tag-green">${item.status || 'CONVERGED'}</span></td>
+        </tr>
+      `).join('');
+    }
+  } catch (err) {
+    console.warn('Continuous learning status fetch error:', err);
+  }
+}
+
+async function triggerManualLearningPass() {
+  const btn = document.getElementById('btnTriggerLearn');
+  const spinner = document.getElementById('clLearningSpinner');
+  if (btn) btn.disabled = true;
+  if (spinner) spinner.style.display = 'inline-flex';
+
+  try {
+    const res = await fetch('/api/ml/continuous-learning/trigger', { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      await fetchContinuousLearningStatus();
+      await fetchPyTorchLive();
+      alert(`🎉 Continuous Learning Cycle #${data.cycle} Successful!\n• Ingested: +${data.new_samples_added} new Firebase telemetry points\n• Total Replay Buffer: ${data.total_buffer_samples} samples\n• Updated Validation Accuracy: ${data.val_accuracy}%\n• Fine-Tuning Duration: ${data.duration_seconds}s\n• Updated weights loaded into inference engine!`);
+    } else {
+      alert(`Learning pass notice: ${data.error || 'Check server logs'}`);
+    }
+  } catch (err) {
+    alert(`Failed to trigger continuous learning: ${err.message}`);
+  } finally {
+    if (btn) btn.disabled = false;
+    if (spinner) spinner.style.display = 'none';
+  }
+}
+
+async function setLearningInterval(minutes) {
+  try {
+    const res = await fetch('/api/ml/continuous-learning/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ interval_minutes: minutes })
+    });
+    const data = await res.json();
+    if (data.success) {
+      fetchContinuousLearningStatus();
+    }
+  } catch (err) {
+    console.error('Failed to set interval:', err);
+  }
+}
+
+// ========================================================
+// 6.2 BENCH SIMULATION TRIGGER
 // ========================================================
 async function triggerSimulation(c1, v1, c2, v2) {
   try {
@@ -676,8 +797,10 @@ window.addEventListener('DOMContentLoaded', () => {
   fetchEvents();
   fetchPyTorchLive();
   loadBiasConfig();
+  fetchContinuousLearningStatus();
 
   // Continuous polling
   setInterval(fetchTelemetry, 2500);
   setInterval(fetchPyTorchLive, 4000);
+  setInterval(fetchContinuousLearningStatus, 5000);
 });

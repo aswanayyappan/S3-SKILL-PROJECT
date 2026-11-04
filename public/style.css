@@ -236,6 +236,7 @@ body {
   transition: all 0.15s;
 }
 .btn-micro:hover { color: var(--text-primary); border-color: var(--border-focus); }
+.btn-micro.active { background: var(--accent-cyan); color: #0f172a; border-color: var(--accent-cyan); font-weight: 700; }
 .btn-micro.btn-warn { color: var(--warning); border-color: rgba(245, 158, 11, 0.4); }
 .btn-micro.btn-danger { color: var(--danger); border-color: rgba(239, 68, 68, 0.4); }
 

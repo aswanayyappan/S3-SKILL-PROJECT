@@ -589,6 +589,98 @@
           </div>
         </div>
       </div>
+
+      <!-- Autonomous Continuous Online Learning Subsystem Card -->
+      <section class="card" style="margin-top: 14px; border-top: 2px solid var(--accent-cyan);">
+        <div class="mcp-card-head" style="margin-bottom: 12px;">
+          <div class="mcp-head-title">
+            <span class="mcp-icon">🔄</span>
+            <div>
+              <h3>Autonomous Continuous Online Learning Engine</h3>
+              <p>Periodically ingests incoming Firebase RTDB streams &bull; Experience replay buffer &bull; Continual weights fine-tuning</p>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="badge-source-real" id="clStatusBadge">🟢 ACTIVE (EVERY 5 MIN)</span>
+            <button class="btn btn-primary btn-sm" id="btnTriggerLearn" onclick="triggerManualLearningPass()">
+              <span>⚡</span> Ingest &amp; Learn Now
+            </button>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-card-alt); padding: 10px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border); flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">Learning Interval:</span>
+            <div class="tools-btn-row" id="clIntervalButtons">
+              <button class="btn-micro" id="btnInt2" onclick="setLearningInterval(2)">2 min</button>
+              <button class="btn-micro active" id="btnInt5" onclick="setLearningInterval(5)">5 min (Default)</button>
+              <button class="btn-micro" id="btnInt15" onclick="setLearningInterval(15)">15 min</button>
+              <button class="btn-micro" id="btnInt30" onclick="setLearningInterval(30)">30 min</button>
+              <button class="btn-micro" id="btnInt0" onclick="setLearningInterval(0)">Manual Only</button>
+            </div>
+          </div>
+          <div id="clLearningSpinner" style="display: none; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--accent-cyan); font-weight: 700;">
+            <span class="pulse-cyan">●</span> Ingesting telemetry &amp; fine-tuning PyTorch Transformer...
+          </div>
+        </div>
+
+        <!-- Metrics Row -->
+        <div class="pytorch-stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 14px;">
+          <div class="p-stat-box">
+            <span>LEARNING CYCLES</span>
+            <strong id="clTotalCycles">1 Completed</strong>
+            <small id="clLastLearnedTime">Just now</small>
+          </div>
+          <div class="p-stat-box">
+            <span>REPLAY BUFFER</span>
+            <strong id="clTotalBuffer">234 Samples</strong>
+            <small id="clNewSamplesDelta">+4 Ingested</small>
+          </div>
+          <div class="p-stat-box">
+            <span>VALIDATION ACCURACY</span>
+            <strong id="clAccuracy" style="color: var(--success);">97.22%</strong>
+            <small id="clLossValue">Loss: 0.1703</small>
+          </div>
+          <div class="p-stat-box">
+            <span>WEIGHT CHECKPOINT</span>
+            <strong>s3_iot_model.pth</strong>
+            <small>Dynamic Auto-Reload</small>
+          </div>
+        </div>
+
+        <!-- Learning Progression Timeline Table -->
+        <div>
+          <h4 style="font-size: 0.82rem; font-weight: 700; margin-bottom: 8px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+            📜 Learning Progression &amp; Adaptation Timeline
+          </h4>
+          <div style="overflow-x: auto;">
+            <table class="table-custom" style="width: 100%; font-size: 0.8rem;" id="clHistoryTable">
+              <thead>
+                <tr>
+                  <th>Cycle #</th>
+                  <th>Timestamp</th>
+                  <th>New Data Ingested</th>
+                  <th>Total Buffer</th>
+                  <th>Fine-Tuning Loss</th>
+                  <th>Validation Accuracy</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="clHistoryTableBody">
+                <tr>
+                  <td>Cycle 1</td>
+                  <td class="mono">Just now</td>
+                  <td>+4 Samples</td>
+                  <td>234 Points</td>
+                  <td class="mono">0.1703</td>
+                  <td class="mono" style="color: var(--success); font-weight: bold;">97.22%</td>
+                  <td><span class="badge-tag tag-green">CONVERGED</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
     </main>
 
     <!-- ======================================================== -->

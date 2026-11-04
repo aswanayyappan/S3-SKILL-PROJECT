@@ -709,6 +709,130 @@ app.post('/api/ml/predict', async (req, res) => {
 });
 
 // ==========================================
+// AUTONOMOUS CONTINUOUS ONLINE LEARNING SUBSYSTEM
+// ==========================================
+let continuousLearningIntervalMs = 5 * 60 * 1000; // Default: every 5 minutes
+let continuousLearningTimer = null;
+let isLearningInProgress = false;
+let lastLearningCycleResult = null;
+let lastLearningStartTime = null;
+
+function runContinuousLearningCycle() {
+  if (isLearningInProgress) {
+    console.log('[Continuous Learning] Previous cycle still in progress, skipping tick.');
+    return;
+  }
+
+  isLearningInProgress = true;
+  lastLearningStartTime = Date.now();
+  console.log(`[Continuous Learning] 🔄 Starting scheduled learning pass on interval (${continuousLearningIntervalMs / 60000}m)...`);
+
+  const pyScript = path.join(__dirname, 'ml_engine', 'continuous_learning.py');
+  execFile('python', [pyScript, '--once'], { maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+    isLearningInProgress = false;
+    if (err) {
+      console.error('[Continuous Learning] ❌ Learning cycle error:', err.message, stderr);
+      return;
+    }
+    try {
+      const parsed = JSON.parse(stdout.trim());
+      lastLearningCycleResult = parsed;
+      console.log(`[Continuous Learning] ✅ Cycle #${parsed.cycle} complete in ${parsed.duration_seconds}s! Ingested: +${parsed.new_samples_added} samples (Total: ${parsed.total_buffer_samples}). Val Acc: ${parsed.val_accuracy}%`);
+    } catch (pe) {
+      console.warn('[Continuous Learning] Output parse warning:', stdout);
+    }
+  });
+}
+
+function startContinuousLearningLoop() {
+  if (continuousLearningTimer) clearInterval(continuousLearningTimer);
+  if (continuousLearningIntervalMs > 0) {
+    continuousLearningTimer = setInterval(runContinuousLearningCycle, continuousLearningIntervalMs);
+    console.log(`[Continuous Learning] 🟢 Daemon scheduled: Learning pass every ${continuousLearningIntervalMs / 60000} minute(s).`);
+  } else {
+    console.log('[Continuous Learning] ⏸️ Daemon paused (interval set to manual).');
+  }
+}
+
+// Start continuous learning timer 30 seconds after server launch
+setTimeout(() => {
+  startContinuousLearningLoop();
+}, 30000);
+
+// Endpoint: Continuous Learning Status & Control
+app.get('/api/ml/continuous-learning/status', (req, res) => {
+  const historyPath = path.join(__dirname, 'ml_engine', 'weights', 'learning_history.json');
+  let history = [];
+  if (fs.existsSync(historyPath)) {
+    try {
+      history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
+    } catch (e) {}
+  }
+
+  const latestCycle = history[history.length - 1] || lastLearningCycleResult || {};
+  res.json({
+    active: continuousLearningIntervalMs > 0,
+    interval_minutes: continuousLearningIntervalMs / 60000,
+    interval_ms: continuousLearningIntervalMs,
+    is_learning_in_progress: isLearningInProgress,
+    total_cycles_completed: history.length,
+    latest_cycle: latestCycle,
+    recent_history: history.slice(-10).reverse()
+  });
+});
+
+app.post('/api/ml/continuous-learning/trigger', (req, res) => {
+  if (isLearningInProgress) {
+    return res.status(409).json({ success: false, error: "A continuous learning pass is already running." });
+  }
+
+  isLearningInProgress = true;
+  lastLearningStartTime = Date.now();
+  console.log('[Continuous Learning] ⚡ Manual learning pass triggered via API.');
+
+  const pyScript = path.join(__dirname, 'ml_engine', 'continuous_learning.py');
+  execFile('python', [pyScript, '--once'], { maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+    isLearningInProgress = false;
+    if (err) {
+      return res.status(500).json({ success: false, error: err.message, stderr });
+    }
+    try {
+      const parsed = JSON.parse(stdout.trim());
+      lastLearningCycleResult = parsed;
+      res.json(parsed);
+    } catch (pe) {
+      res.status(500).json({ success: false, error: "Failed to parse learning cycle output", raw: stdout });
+    }
+  });
+});
+
+app.post('/api/ml/continuous-learning/config', (req, res) => {
+  const { interval_minutes } = req.body;
+  if (interval_minutes !== undefined) {
+    const mins = Math.max(0, Number(interval_minutes));
+    continuousLearningIntervalMs = mins * 60 * 1000;
+    startContinuousLearningLoop();
+    return res.json({
+      success: true,
+      active: continuousLearningIntervalMs > 0,
+      interval_minutes: mins
+    });
+  }
+  res.status(400).json({ error: "interval_minutes is required" });
+});
+
+app.get('/api/ml/learning-history', (req, res) => {
+  const historyPath = path.join(__dirname, 'ml_engine', 'weights', 'learning_history.json');
+  if (fs.existsSync(historyPath)) {
+    try {
+      const history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
+      return res.json({ success: true, history });
+    } catch (e) {}
+  }
+  res.json({ success: true, history: [] });
+});
+
+// ==========================================
 // MCP & CHATGPT CUSTOM GPT ACTION ENDPOINTS
 // ==========================================
 // 1. ChatGPT OpenAPI 3.1 Specification
