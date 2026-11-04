@@ -92,10 +92,10 @@ function initTheme() {
 function applyTheme(theme) {
   if (theme === 'light') {
     document.body.classList.add('light-theme');
-    themeIcon.textContent = '🌙';
+    themeIcon.innerHTML = `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`;
   } else {
     document.body.classList.remove('light-theme');
-    themeIcon.textContent = '☀️';
+    themeIcon.innerHTML = `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`;
   }
   localStorage.setItem('s3_theme', theme);
 }
@@ -271,7 +271,7 @@ function renderApplianceList(container, apps) {
             </div>
           </div>
           <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
-            <span class="badge-source-real">🟢 REAL HARDWARE</span>
+            <span class="badge-source-real"><span class="live-dot pulse-green" style="width: 5px; height: 5px;"></span> REAL HARDWARE</span>
             <span class="device-status-badge ${app.status.includes('RUN') || app.status === 'ON' ? 'status-on' : 'status-off'}">
               ${app.status}
             </span>
@@ -535,18 +535,18 @@ async function fetchContinuousLearningStatus() {
       if (spinner) spinner.style.display = 'inline-flex';
       if (btnTrigger) btnTrigger.disabled = true;
       if (statusBadge) {
-        statusBadge.textContent = '🔄 FINE-TUNING IN PROGRESS...';
-        statusBadge.style.color = '#38bdf8';
+        statusBadge.textContent = 'FINE-TUNING IN PROGRESS...';
+        statusBadge.style.color = 'var(--accent-sky)';
       }
     } else {
       if (spinner) spinner.style.display = 'none';
       if (btnTrigger) btnTrigger.disabled = false;
       if (statusBadge) {
         if (data.active) {
-          statusBadge.textContent = `🟢 ACTIVE (EVERY ${data.interval_minutes} MIN)`;
+          statusBadge.textContent = `ACTIVE (EVERY ${data.interval_minutes} MIN)`;
           statusBadge.style.color = 'var(--success)';
         } else {
-          statusBadge.textContent = '⏸️ PAUSED (MANUAL ONLY)';
+          statusBadge.textContent = 'PAUSED (MANUAL ONLY)';
           statusBadge.style.color = 'var(--warning)';
         }
       }
@@ -604,7 +604,7 @@ async function triggerManualLearningPass() {
     if (data.success) {
       await fetchContinuousLearningStatus();
       await fetchPyTorchLive();
-      alert(`🎉 Continuous Learning Cycle #${data.cycle} Successful!\n• Ingested: +${data.new_samples_added} new Firebase telemetry points\n• Total Replay Buffer: ${data.total_buffer_samples} samples\n• Updated Validation Accuracy: ${data.val_accuracy}%\n• Fine-Tuning Duration: ${data.duration_seconds}s\n• Updated weights loaded into inference engine!`);
+      alert(`Continuous Learning Cycle #${data.cycle} Successful!\n• Ingested: +${data.new_samples_added} new Firebase telemetry points\n• Total Replay Buffer: ${data.total_buffer_samples} samples\n• Updated Validation Accuracy: ${data.val_accuracy}%\n• Fine-Tuning Duration: ${data.duration_seconds}s\n• Updated weights loaded into inference engine!`);
     } else {
       alert(`Learning pass notice: ${data.error || 'Check server logs'}`);
     }
@@ -668,7 +668,7 @@ async function sendPrompt(text) {
   appendChatMessage('user', text);
 
   // Show typing indicator
-  const typingEl = appendChatMessage('assistant', '🤖 *Consulting electrical intelligence engine & telemetry logs...*');
+  const typingEl = appendChatMessage('assistant', '*Consulting electrical intelligence engine & telemetry logs...*');
 
   try {
     const headers = { 'Content-Type': 'application/json' };

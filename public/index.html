@@ -34,7 +34,7 @@
       <div class="header-actions">
         <!-- Live Status Pills -->
         <div class="inr-badge" title="Electricity Tariff Rate">
-          <span class="currency-symbol">⚡</span>
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"/><path d="M6 8h12"/><path d="m6 13 8.5 8"/><path d="M6 13h3a4 4 0 0 0 0-8"/></svg>
           <span>Tariff: <strong id="headerKsebSlab">₹8.00 / Unit</strong></span>
         </div>
         
@@ -43,20 +43,22 @@
           <span class="db-name">Firebase RTDB</span>
         </div>
 
-        <div class="db-badge" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3);" title="Physical ESP32 Bench Online">
+        <div class="db-badge live-connected" title="ESP32 Telemetry Online">
           <span class="live-dot pulse-green"></span>
-          <span style="color: var(--success); font-weight: 700;">ESP32 Bench Connected</span>
+          <span style="font-weight: 600;">ESP32 Connected</span>
         </div>
 
         <!-- Theme Toggle (Dark / Light) -->
         <button id="themeToggleBtn" class="btn btn-icon btn-sm" title="Toggle Dark/Light Mode">
-          <span id="themeIcon">☀️</span>
+          <span id="themeIcon">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+          </span>
         </button>
 
         <!-- Refresh Button -->
         <button id="refreshBtn" class="btn btn-icon btn-sm" title="Refresh Live Data">
-          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
-            <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/>
           </svg>
         </button>
       </div>
@@ -66,20 +68,20 @@
     <nav class="view-switcher-bar">
       <div class="tabs-group" role="tablist">
         <button class="view-tab active" data-view="overview" id="tabOverviewBtn">
-          <span class="tab-icon">⚡</span>
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           <span class="tab-text">Command Center</span>
         </button>
         <button class="view-tab" data-view="anomalies" id="tabAnomaliesBtn">
-          <span class="tab-icon">🚨</span>
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           <span class="tab-text">ML Anomaly Feed</span>
           <span class="tab-pill pill-alert" id="anomalyCountBadge">3</span>
         </button>
         <button class="view-tab" data-view="mcp" id="tabMcpBtn">
-          <span class="tab-icon">🧠</span>
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
           <span class="tab-text">Neural Model &amp; Learning</span>
         </button>
         <button class="view-tab" data-view="schematics" id="tabSchematicsBtn">
-          <span class="tab-icon">📐</span>
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
           <span class="tab-text">Circuit &amp; Slides</span>
         </button>
       </div>
@@ -109,22 +111,32 @@
       <section class="card flow-card">
         <div class="flow-header">
           <div class="flow-title">
-            <span class="flow-icon">☀️</span>
+            <span class="flow-icon">
+              <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+            </span>
             <div>
               <h3>Solar Energy &amp; Electrical Load Architecture</h3>
               <p>6V Solar Panel &bull; TP4056 Charger &bull; 3.7V Li-ion Battery &bull; DC-DC 5V Booster &bull; Monitored 5V Loads (LED &amp; DC Motor) &bull; ESP32 Cloud</p>
             </div>
           </div>
           <div class="flow-legend">
-            <span class="badge-mini-real" style="background: rgba(245, 158, 11, 0.15); color: #d97706; font-weight: 700;">☀️ 6V Solar ➔ TP4056 ➔ 3.7V Battery</span>
-            <span class="badge-mini-bias" style="background: rgba(16, 185, 129, 0.15); color: #059669; font-weight: 700;">⚡ DC-DC 5V Booster Rail</span>
+            <span class="badge-mini-real" style="background: rgba(245, 158, 11, 0.12); color: #d97706; font-weight: 600;">
+              <svg class="ui-icon" style="width: 13px; height: 13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M2 12h2"/><path d="M20 12h2"/></svg>
+              6V Solar ➔ TP4056 ➔ 3.7V Battery
+            </span>
+            <span class="badge-mini-bias" style="background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 600;">
+              <svg class="ui-icon" style="width: 13px; height: 13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              DC-DC 5V Booster Rail
+            </span>
           </div>
         </div>
 
         <div class="power-flow-container">
           <!-- Flow Stage 1: 6V Solar Panel & TP4056 -->
-          <div class="flow-node node-solar" style="border-left: 4px solid #f59e0b; min-width: 200px;">
-            <div class="node-icon">☀️</div>
+          <div class="flow-node node-solar" style="border-left: 3px solid #f59e0b; min-width: 200px;">
+            <div class="node-icon">
+              <svg class="ui-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+            </div>
             <div class="node-content">
               <strong>6V Solar Panel</strong>
               <span class="node-detail">6V / 5–10W PV Generation</span>
@@ -135,34 +147,38 @@
           <!-- Flow Arrow -->
           <div class="flow-connector">
             <div class="flow-line"><div class="flow-particle" style="background: #f59e0b;"></div></div>
-            <span class="flow-label" style="color: #d97706; font-weight: 700;">TP4056 ➔</span>
+            <span class="flow-label" style="color: #d97706; font-weight: 600;">TP4056 ➔</span>
           </div>
 
           <!-- Flow Stage 2: 3.7V Li-ion Battery & 5V Booster -->
-          <div class="flow-node" style="border-left: 4px solid #10b981; background: var(--bg-card); min-width: 220px;">
-            <div class="node-icon">🔋⚡</div>
+          <div class="flow-node" style="border-left: 3px solid #10b981; background: var(--bg-card); min-width: 220px;">
+            <div class="node-icon">
+              <svg class="ui-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"/><path d="M6 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h1"/><line x1="22" y1="11" x2="22" y2="13"/><polyline points="11 7 8 12 13 12 10 17"/></svg>
+            </div>
             <div class="node-content">
               <strong>3.7V Li-ion &amp; 5V Booster</strong>
               <span class="node-detail">18650 Cell &bull; 3.7V &rarr; 5V DC-DC Step-Up</span>
-              <div class="node-badge badge-green" style="font-size: 0.68rem; font-weight: 800; margin-top: 4px;">5V DC OUTPUT RAIL</div>
+              <div class="node-badge badge-green" style="font-size: 0.68rem; font-weight: 700; margin-top: 4px;">5V DC OUTPUT RAIL</div>
             </div>
           </div>
 
           <!-- Flow Arrow -->
           <div class="flow-connector">
             <div class="flow-line"><div class="flow-particle" style="background: #10b981;"></div></div>
-            <span class="flow-label" style="color: #059669; font-weight: 700;">5V DC Rail ➔</span>
+            <span class="flow-label" style="color: #059669; font-weight: 600;">5V DC Rail ➔</span>
           </div>
 
           <!-- Flow Stage 3: Direct Solar-Powered Loads (DC LED & DC Motor) -->
           <div class="flow-loads-group real-group" style="border-left: 3px solid #10b981; min-width: 270px;">
             <div class="flow-group-title">
               <span style="color: #059669;">5V MONITORED LOADS</span>
-              <span class="badge-mini-real" style="background: rgba(16, 185, 129, 0.15); color: #059669; border-color: rgba(16, 185, 129, 0.4);">5V Booster Rail</span>
+              <span class="badge-mini-real" style="background: rgba(16, 185, 129, 0.12); color: #059669; border-color: rgba(16, 185, 129, 0.3);">5V Booster Rail</span>
             </div>
             <!-- Load 1: DC LED Fixture -->
             <div class="load-pill-item item-real" style="border-left: 3px solid #0284c7;">
-              <span class="lp-icon">💡</span>
+              <span class="lp-icon">
+                <svg class="ui-icon" style="color: #0284c7;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+              </span>
               <div>
                 <span class="lp-name">LED Load (5V):</span>
                 <span style="display: block; font-size: 0.68rem; color: #0284c7; font-weight: 600;">GPIO 32 (V) &bull; GPIO 34 (I)</span>
@@ -172,7 +188,9 @@
             </div>
             <!-- Load 2: DC Motor -->
             <div class="load-pill-item item-real" style="border-left: 3px solid #10b981;">
-              <span class="lp-icon">⚙️</span>
+              <span class="lp-icon">
+                <svg class="ui-icon" style="color: #10b981;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+              </span>
               <div>
                 <span class="lp-name">DC Motor (5V):</span>
                 <span style="display: block; font-size: 0.68rem; color: #10b981; font-weight: 600;">GPIO 33 (V) &bull; GPIO 35 (I)</span>
@@ -189,11 +207,13 @@
           </div>
 
           <!-- Flow Stage 4: ESP32 MCU Sensing Unit -->
-          <div class="flow-node" style="border-left: 4px solid #3b82f6; background: var(--bg-card); min-width: 210px;">
-            <div class="node-icon">📡</div>
+          <div class="flow-node" style="border-left: 3px solid #3b82f6; background: var(--bg-card); min-width: 210px;">
+            <div class="node-icon">
+              <svg class="ui-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+            </div>
             <div class="node-content">
               <strong>ESP32 DevKit V1</strong>
-              <span class="node-detail" style="color: #3b82f6; font-weight: 700;">Dual ACS712 &bull; Cloud Sync</span>
+              <span class="node-detail" style="color: #3b82f6; font-weight: 600;">Dual ACS712 &bull; Cloud Sync</span>
               <div style="margin-top: 4px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
                 <span class="badge-tag tag-blue" style="font-size: 0.65rem;">P = V &times; I</span>
                 <span class="badge-mini-bias" id="biasFlowBadge">Zero-Bias: Active</span>
@@ -205,26 +225,32 @@
 
       <!-- Executive KPI Cards -->
       <section class="kpi-strip">
-        <div class="kpi-card" style="border-left: 4px solid #0284c7;">
-          <div class="kpi-icon kpi-solar" style="background: rgba(2, 132, 199, 0.15); color: #0284c7;">💡</div>
+        <div class="kpi-card" style="border-left: 3px solid #0284c7;">
+          <div class="kpi-icon kpi-solar" style="background: rgba(2, 132, 199, 0.12); color: #0284c7;">
+            <svg class="ui-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+          </div>
           <div class="kpi-details">
             <span class="kpi-label">SOLAR LOAD 1 (DC LED)</span>
             <div class="kpi-value"><span id="kpiSolarLedPower">0.00</span> <small>W</small></div>
-            <span class="kpi-sub" style="color: #0284c7; font-weight: 600;">Direct Solar Rail</span>
+            <span class="kpi-sub" style="color: #0284c7; font-weight: 500;">Direct Solar Rail</span>
           </div>
         </div>
 
-        <div class="kpi-card" style="border-left: 4px solid #10b981;">
-          <div class="kpi-icon kpi-green">⚙️</div>
+        <div class="kpi-card" style="border-left: 3px solid #10b981;">
+          <div class="kpi-icon kpi-green">
+            <svg class="ui-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+          </div>
           <div class="kpi-details">
             <span class="kpi-label">SOLAR LOAD 2 (DC MOTOR)</span>
             <div class="kpi-value"><span id="kpiMotorPower">0.00</span> <small>W</small></div>
-            <span class="kpi-sub" style="color: #10b981; font-weight: 600;">Direct Solar Rail</span>
+            <span class="kpi-sub" style="color: #10b981; font-weight: 500;">Direct Solar Rail</span>
           </div>
         </div>
 
         <div class="kpi-card">
-          <div class="kpi-icon kpi-blue">⚡</div>
+          <div class="kpi-icon kpi-blue">
+            <svg class="ui-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          </div>
           <div class="kpi-details">
             <span class="kpi-label">TOTAL MONITORED LOAD</span>
             <div class="kpi-value"><span id="kpiTotalPower">0.0</span> <small>W</small></div>
@@ -233,7 +259,9 @@
         </div>
 
         <div class="kpi-card">
-          <div class="kpi-icon kpi-purple">📊</div>
+          <div class="kpi-icon kpi-purple">
+            <svg class="ui-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </div>
           <div class="kpi-details">
             <span class="kpi-label">CUMULATIVE UNITS</span>
             <div class="kpi-value"><span id="kpiTotalUnits">0.0000</span> <small>kWh</small></div>
@@ -242,7 +270,9 @@
         </div>
 
         <div class="kpi-card inr-kpi">
-          <div class="kpi-icon kpi-inr">₹</div>
+          <div class="kpi-icon kpi-inr">
+            <svg class="ui-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"/><path d="M6 8h12"/><path d="m6 13 8.5 8"/><path d="M6 13h3a4 4 0 0 0 0-8"/></svg>
+          </div>
           <div class="kpi-details">
             <span class="kpi-label">ENERGY CHARGE (@ ₹8/UNIT)</span>
             <div class="kpi-value"><span id="kpiTotalCostINR">₹0.00</span> <small>INR</small></div>
@@ -256,13 +286,16 @@
         <div class="loads-grid">
           
           <!-- Load 1: DC LED Fixture (Solar-Powered) -->
-          <div class="card device-card led-theme" style="border-top: 4px solid #0284c7;">
+          <div class="card device-card led-theme" style="border-top: 3px solid #0284c7;">
             <div class="device-card-header">
               <div class="device-title">
                 <span class="device-dot dot-led"></span>
                 <div>
-                  <h3 style="font-size: 1.05rem;">LOAD 1: DC LED FIXTURE</h3>
-                  <span style="font-size: 0.72rem; color: #0284c7; font-weight: 700;">☀️ Powered Directly by Solar Battery Rail</span>
+                  <h3 style="font-size: 1rem; display: flex; align-items: center; gap: 6px;">
+                    <svg class="ui-icon" style="color: #0284c7;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+                    LOAD 1: DC LED FIXTURE
+                  </h3>
+                  <span style="font-size: 0.72rem; color: #0284c7; font-weight: 600;">5V Booster Rail &bull; 6V PV Ingest</span>
                 </div>
               </div>
               <span class="device-status-badge status-off" id="ledStatusBadge">OFF</span>
@@ -297,13 +330,16 @@
           </div>
 
           <!-- Load 2: DC Motor (Direct Solar-Powered Bench Load) -->
-          <div class="card device-card pump-theme" style="border-top: 4px solid #10b981;">
+          <div class="card device-card pump-theme" style="border-top: 3px solid #10b981;">
             <div class="device-card-header">
               <div class="device-title">
                 <span class="device-dot dot-pump"></span>
                 <div>
-                  <h3 style="font-size: 1.05rem;">LOAD 2: DC MOTOR</h3>
-                  <span style="font-size: 0.72rem; color: #10b981; font-weight: 700;">☀️ Powered Directly by Solar Battery Rail &bull; Inductive Load</span>
+                  <h3 style="font-size: 1rem; display: flex; align-items: center; gap: 6px;">
+                    <svg class="ui-icon" style="color: #10b981;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+                    LOAD 2: DC MOTOR
+                  </h3>
+                  <span style="font-size: 0.72rem; color: #10b981; font-weight: 600;">5V Booster Rail &bull; Inductive Load</span>
                 </div>
               </div>
               <span class="device-status-badge status-off" id="motorStatusBadge">OFF</span>
@@ -339,17 +375,14 @@
         </div>
 
         <!-- Quick Telemetry Simulation Bar -->
-        <div class="card sim-card" style="margin-top: 4px;">
+        <div class="card sim-card" style="margin-top: 14px;">
           <div class="sim-header">
-            <div class="sim-title">⚙️ Telemetry &amp; Anomaly Simulator</div>
+            <div class="sim-title" style="display: flex; align-items: center; gap: 8px;">
+              <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+              Telemetry &amp; Anomaly Simulator
+            </div>
             <div class="sim-actions">
               <button class="btn-micro" onclick="triggerSimulation(0.393, 4.63, 0.183, 1.18)">System Baseline</button>
-              <button class="btn-micro btn-warn" onclick="triggerSimulation(0.393, 4.63, 1.85, 5.0)">Motor Surge (1.85A)</button>
-              <button class="btn-micro btn-danger" onclick="triggerSimulation(0.393, 4.63, 3.20, 4.8)">Motor Stall (3.2A)</button>
-              <button class="btn-micro" onclick="triggerSimulation(0, 0, 0, 0)">Power OFF</button>
-            </div>
-          </div>
-        </div>
               <button class="btn-micro btn-warn" onclick="triggerSimulation(0.393, 4.63, 1.85, 5.0)">Motor Surge (1.85A)</button>
               <button class="btn-micro btn-danger" onclick="triggerSimulation(0.393, 4.63, 3.20, 4.8)">Motor Stall (3.2A)</button>
               <button class="btn-micro" onclick="triggerSimulation(0, 0, 0, 0)">Power OFF</button>
@@ -422,7 +455,9 @@
         <div class="card mcp-card">
           <div class="mcp-card-head">
             <div class="mcp-head-title">
-              <span class="mcp-icon">🧠</span>
+              <span class="mcp-icon">
+                <svg class="ui-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
+              </span>
               <div>
                 <h3>PyTorch S3ElectricalTransformer</h3>
                 <p>Multi-Head Self-Attention Neural Network (64-dim, 4 heads, 2 layers)</p>
@@ -467,7 +502,10 @@
 
           <!-- Interactive Inference Tester -->
           <div class="mcp-tool-tester">
-            <h4 style="font-size: 0.82rem; font-weight: 700; margin-bottom: 8px;">🔬 Interactive PyTorch Inference Tester</h4>
+            <h4 style="font-size: 0.82rem; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+              <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              Interactive PyTorch Inference Tester
+            </h4>
             <div class="tester-inputs-grid">
               <label>LED V: <input type="number" id="testVLed" value="1.18" step="0.1"></label>
               <label>LED I (A): <input type="number" id="testCLed" value="0.24" step="0.01"></label>
@@ -488,7 +526,9 @@
         <div class="card mcp-card">
           <div class="mcp-card-head">
             <div class="mcp-head-title">
-              <span class="mcp-icon">🤖</span>
+              <span class="mcp-icon">
+                <svg class="ui-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+              </span>
               <div>
                 <h3>Model Context Protocol (MCP) &amp; ChatGPT</h3>
                 <p>Standardized tools interface for ChatGPT Custom GPTs, Claude Desktop, and Cursor</p>
@@ -519,19 +559,37 @@
           <div class="mcp-tools-list">
             <span class="tl-title">Active MCP Tools:</span>
             <div class="tools-btn-row">
-              <button class="chip-btn" onclick="executeMcpTool('get_live_telemetry')">⚡ get_live_telemetry</button>
-              <button class="chip-btn" onclick="executeMcpTool('get_power_and_bill')">💰 get_power_and_bill</button>
-              <button class="chip-btn" onclick="executeMcpTool('predict_electrical_anomaly')">🧠 predict_electrical_anomaly</button>
-              <button class="chip-btn" onclick="executeMcpTool('get_sensor_bias_calibration')">🛡️ get_sensor_bias_calibration</button>
-              <button class="chip-btn" onclick="executeMcpTool('get_hardware_pinout')">🔌 get_hardware_pinout</button>
+              <button class="chip-btn" onclick="executeMcpTool('get_live_telemetry')">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                get_live_telemetry
+              </button>
+              <button class="chip-btn" onclick="executeMcpTool('get_power_and_bill')">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"/><path d="M6 8h12"/><path d="m6 13 8.5 8"/><path d="M6 13h3a4 4 0 0 0 0-8"/></svg>
+                get_power_and_bill
+              </button>
+              <button class="chip-btn" onclick="executeMcpTool('predict_electrical_anomaly')">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                predict_electrical_anomaly
+              </button>
+              <button class="chip-btn" onclick="executeMcpTool('get_sensor_bias_calibration')">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/></svg>
+                get_sensor_bias_calibration
+              </button>
+              <button class="chip-btn" onclick="executeMcpTool('get_hardware_pinout')">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>
+                get_hardware_pinout
+              </button>
             </div>
             <pre class="mcp-output-pre" id="mcpToolOutput">// Click any MCP tool button above to test instant execution</pre>
           </div>
 
           <!-- Zero-Bias Deadband Calibration Controls -->
-          <div class="card" style="margin-top: 14px; background: var(--bg-card-alt); padding: 12px;">
+          <div class="card" style="margin-top: 14px; background: var(--bg-card-alt); padding: 14px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <h4 style="font-size: 0.82rem; font-weight: 700;">⚙️ Physical Sensor Zero-Bias Deadband</h4>
+              <h4 style="font-size: 0.82rem; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/></svg>
+                Physical Sensor Zero-Bias Deadband
+              </h4>
               <span class="status-micro status-on">Filter: Active</span>
             </div>
             <div class="tester-inputs-grid">
@@ -545,19 +603,25 @@
       </div>
 
       <!-- Autonomous Continuous Online Learning Subsystem Card -->
-      <section class="card" style="margin-top: 14px; border-top: 2px solid var(--accent-cyan);">
+      <section class="card" style="margin-top: 14px; border-top: 2px solid var(--border-hover);">
         <div class="mcp-card-head" style="margin-bottom: 12px;">
           <div class="mcp-head-title">
-            <span class="mcp-icon">🔄</span>
+            <span class="mcp-icon">
+              <svg class="ui-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+            </span>
             <div>
               <h3>Autonomous Continuous Online Learning Engine</h3>
               <p>Periodically ingests incoming Firebase RTDB streams &bull; Experience replay buffer &bull; Continual weights fine-tuning</p>
             </div>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="badge-source-real" id="clStatusBadge">🟢 ACTIVE (EVERY 5 MIN)</span>
+            <span class="badge-source-real" id="clStatusBadge">
+              <span class="live-dot pulse-green" style="width: 6px; height: 6px; display: inline-block;"></span>
+              ACTIVE (EVERY 5 MIN)
+            </span>
             <button class="btn btn-primary btn-sm" id="btnTriggerLearn" onclick="triggerManualLearningPass()">
-              <span>⚡</span> Ingest &amp; Learn Now
+              <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+              Ingest &amp; Learn Now
             </button>
           </div>
         </div>
@@ -573,8 +637,8 @@
               <button class="btn-micro" id="btnInt0" onclick="setLearningInterval(0)">Manual Only</button>
             </div>
           </div>
-          <div id="clLearningSpinner" style="display: none; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--accent-cyan); font-weight: 700;">
-            <span class="pulse-cyan">●</span> Ingesting telemetry &amp; fine-tuning PyTorch Transformer...
+          <div id="clLearningSpinner" style="display: none; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--accent-sky); font-weight: 600;">
+            <span class="live-dot pulse-blue" style="width: 6px; height: 6px; display: inline-block;"></span> Ingesting telemetry &amp; fine-tuning PyTorch Transformer...
           </div>
         </div>
 
@@ -604,8 +668,9 @@
 
         <!-- Learning Progression Timeline Table -->
         <div>
-          <h4 style="font-size: 0.82rem; font-weight: 700; margin-bottom: 8px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-            📜 Learning Progression &amp; Adaptation Timeline
+          <h4 style="font-size: 0.82rem; font-weight: 700; margin-bottom: 8px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><polyline points="12 7 12 12 15 15"/></svg>
+            Learning Progression &amp; Adaptation Timeline
           </h4>
           <div style="overflow-x: auto;">
             <table class="table-custom" style="width: 100%; font-size: 0.8rem;" id="clHistoryTable">
@@ -637,10 +702,8 @@
       </section>
     </main>
 
-
-
     <!-- ======================================================== -->
-    <!-- VIEW 5: CIRCUIT SCHEMATICS & PRESENTATION SLIDES        -->
+    <!-- VIEW 4: CIRCUIT SCHEMATICS & PRESENTATION SLIDES        -->
     <!-- ======================================================== -->
     <main class="view-container" id="view-schematics">
       <div class="schematics-grid">
@@ -678,10 +741,10 @@
             <div>
               <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
                 <span class="badge badge-info" style="font-size: 0.72rem; padding: 2px 8px;">FUTURE SCOPE ARCHITECTURE</span>
-                <span style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 700;">Hybrid Electrical ML + Groq LLM</span>
+                <span style="font-size: 0.75rem; color: var(--accent-sky); font-weight: 700;">Hybrid Electrical ML + Cloud Telemetry</span>
               </div>
               <h3 style="font-size: 1.1rem;">Smart Home Modular Switch System &amp; Multi-Node Circuit Schematic</h3>
-              <p>Decentralized modular switch holders &bull; Offline edge ML anomaly detection &bull; Groq AI tool calling orchestrator</p>
+              <p>Decentralized modular switch holders &bull; Offline edge ML anomaly detection &bull; Cloud telemetry sync</p>
             </div>
             <a href="Smart_Home_Modular_Switch_System_Diagram.png" target="_blank" class="btn btn-secondary btn-sm">Full High-Res Schematic ↗</a>
           </div>
@@ -689,11 +752,22 @@
             <img src="Smart_Home_Modular_Switch_System_Diagram.png" alt="Smart Home Modular Switch System Circuit and Architecture" loading="lazy">
           </div>
           <div class="schematic-tags-row">
-            <div class="schematic-chip"><span>🔌</span> <strong>Modular Holders:</strong> 1-4 Gang plug-in appliance switches</div>
-            <div class="schematic-chip"><span>⚡</span> <strong>Per-Switch Telemetry:</strong> Isolated V, I, P, E sensing per holder</div>
-            <div class="schematic-chip"><span>🧠</span> <strong>Edge ML Engine:</strong> Offline continuous electrical anomaly detection</div>
-            <div class="schematic-chip"><span>📊</span> <strong>Event Database:</strong> Strict verified schema (what, when, where, severity)</div>
-            <div class="schematic-chip"><span>💬</span> <strong>Groq Function Calling:</strong> Zero-hallucination conversational audit queries</div>
+            <div class="schematic-chip">
+              <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>
+              <strong>Modular Holders:</strong> 1-4 Gang plug-in appliance switches
+            </div>
+            <div class="schematic-chip">
+              <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              <strong>Per-Switch Telemetry:</strong> Isolated V, I, P, E sensing per holder
+            </div>
+            <div class="schematic-chip">
+              <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              <strong>Edge ML Engine:</strong> Offline continuous electrical anomaly detection
+            </div>
+            <div class="schematic-chip">
+              <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              <strong>Event Database:</strong> Strict verified schema (what, when, where, severity)
+            </div>
           </div>
         </div>
       </div>
@@ -701,7 +775,9 @@
       <!-- Presentation Slide Deck Download Banner -->
       <section class="card pres-download-card">
         <div class="pd-content">
-          <div class="pd-icon">📽️</div>
+          <div class="pd-icon">
+            <svg class="ui-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          </div>
           <div>
             <h3>Official Project Presentation Slide Deck</h3>
             <p>Formatted in clean PowerPoint (.pptx) white background with high-resolution schematics and student credentials.</p>
@@ -709,10 +785,12 @@
         </div>
         <div class="pd-actions">
           <a href="presentation.html" target="_blank" class="btn btn-secondary">
-            <span>🌐</span> Interactive Slide View
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Interactive Slide View
           </a>
           <a href="S-3_IOT_Solar_Battery_Presentation.pptx" download="S-3_IOT_Solar_Battery_Presentation.pptx" class="btn btn-primary">
-            <span>📥</span> Download PowerPoint (.PPTX)
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download PowerPoint (.PPTX)
           </a>
         </div>
       </section>
