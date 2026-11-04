@@ -17,6 +17,8 @@ const navKpiUnits = document.getElementById('navKpiUnits');
 const navKpiCost = document.getElementById('navKpiCost');
 
 // Executive KPIs
+const kpiSolarLedPower = document.getElementById('kpiSolarLedPower');
+const kpiMotorPower = document.getElementById('kpiMotorPower');
 const kpiTotalPower = document.getElementById('kpiTotalPower');
 const kpiTotalUnits = document.getElementById('kpiTotalUnits');
 const kpiTotalCostINR = document.getElementById('kpiTotalCostINR');
@@ -83,7 +85,7 @@ const fsChatUnits = document.getElementById('fsChatUnits');
 // 1. THEME SWITCHER (DARK / LIGHT)
 // ========================================================
 function initTheme() {
-  const savedTheme = localStorage.getItem('s3_theme') || 'dark';
+  const savedTheme = localStorage.getItem('s3_theme') || 'light';
   applyTheme(savedTheme);
 }
 
@@ -163,13 +165,15 @@ function updateUI(t) {
   navKpiCost.textContent = `₹${totalCost.toFixed(2)}`;
 
   // 2. Executive KPI Cards
-  kpiTotalPower.textContent = totalWatts.toFixed(1);
-  kpiTotalUnits.textContent = totalUnits.toFixed(4);
-  kpiTotalCostINR.textContent = `₹${totalCost.toFixed(2)}`;
+  if (kpiSolarLedPower) kpiSolarLedPower.textContent = (led.instantPowerWatts || 0).toFixed(2);
+  if (kpiMotorPower) kpiMotorPower.textContent = (motor.instantPowerWatts || 0).toFixed(2);
+  if (kpiTotalPower) kpiTotalPower.textContent = totalWatts.toFixed(1);
+  if (kpiTotalUnits) kpiTotalUnits.textContent = totalUnits.toFixed(4);
+  if (kpiTotalCostINR) kpiTotalCostINR.textContent = `₹${totalCost.toFixed(2)}`;
 
   if (proj.historicalAverage) {
-    kpiMonthlyCostINR.textContent = `₹${proj.historicalAverage.monthlyCostINR.toFixed(2)}`;
-    kpiMonthlyUnits.textContent = `${proj.historicalAverage.monthlyUnits.toFixed(1)} Units`;
+    if (kpiMonthlyCostINR) kpiMonthlyCostINR.textContent = `₹${proj.historicalAverage.monthlyCostINR.toFixed(2)}`;
+    if (kpiMonthlyUnits) kpiMonthlyUnits.textContent = `${proj.historicalAverage.monthlyUnits.toFixed(1)} Units`;
   }
 
   // 3. Power Flow SVG Card
@@ -369,7 +373,7 @@ function renderEvents(events) {
           </div>
         </td>
         <td>
-          <button class="btn-micro" onclick="askAboutEvent('${e.event_id}', '${e.appliance}', '${e.event_type}')">Ask AI</button>
+          <button class="btn-micro" onclick="switchView('mcp')">Inspect ML</button>
         </td>
       </tr>
     `;
@@ -377,8 +381,7 @@ function renderEvents(events) {
 }
 
 function askAboutEvent(id, appliance, type) {
-  switchView('chat');
-  sendPrompt(`Explain event ${id}: What caused the '${type}' on ${appliance} and what corrective actions should be taken?`);
+  switchView('mcp');
 }
 
 // ========================================================
@@ -729,52 +732,61 @@ function appendChatMessage(role, content, model = null) {
   return el;
 }
 
-// Form Handlers
-chatForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const val = chatInput.value.trim();
-  if (val) {
-    sendPrompt(val);
-    chatInput.value = '';
-  }
-});
+// Form Handlers (if present)
+if (chatForm) {
+  chatForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const val = chatInput ? chatInput.value.trim() : '';
+    if (val) {
+      sendPrompt(val);
+      if (chatInput) chatInput.value = '';
+    }
+  });
+}
 
-fsChatForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const val = fsChatInput.value.trim();
-  if (val) {
-    sendPrompt(val);
-    fsChatInput.value = '';
-  }
-});
+if (fsChatForm) {
+  fsChatForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const val = fsChatInput ? fsChatInput.value.trim() : '';
+    if (val) {
+      sendPrompt(val);
+      if (fsChatInput) fsChatInput.value = '';
+    }
+  });
+}
 
-clearChatBtn.addEventListener('click', () => {
-  chatHistory = [];
-  if (chatMessages) {
-    chatMessages.innerHTML = `
-      <div class="chat-msg assistant">
-        <div class="msg-bubble">Conversation cleared. How can I assist you with facility telemetry or anomaly diagnostics?</div>
-      </div>
-    `;
-  }
-  if (fsChatMessages) {
-    fsChatMessages.innerHTML = `
-      <div class="chat-msg assistant">
-        <div class="msg-bubble">Conversation cleared. How can I assist you?</div>
-      </div>
-    `;
-  }
-});
+if (clearChatBtn) {
+  clearChatBtn.addEventListener('click', () => {
+    chatHistory = [];
+    if (chatMessages) {
+      chatMessages.innerHTML = `
+        <div class="chat-msg assistant">
+          <div class="msg-bubble">Conversation cleared. How can I assist you with facility telemetry or anomaly diagnostics?</div>
+        </div>
+      `;
+    }
+    if (fsChatMessages) {
+      fsChatMessages.innerHTML = `
+        <div class="chat-msg assistant">
+          <div class="msg-bubble">Conversation cleared. How can I assist you?</div>
+        </div>
+      `;
+    }
+  });
+}
 
-// Configure Groq API Key
-document.getElementById('apiKeyBtn').addEventListener('click', () => {
-  const key = prompt('Enter your Groq API Key (saved locally in your browser):', localGroqKey);
-  if (key !== null) {
-    localGroqKey = key.trim();
-    localStorage.setItem('groq_api_key', localGroqKey);
-    alert('Groq API Key saved for this session!');
-  }
-});
+// Configure Groq API Key (if present)
+const apiKeyBtn = document.getElementById('apiKeyBtn');
+if (apiKeyBtn) {
+  apiKeyBtn.addEventListener('click', () => {
+    const key = prompt('Enter your Groq API Key (saved locally in your browser):', localGroqKey);
+    if (key !== null) {
+      localGroqKey = key.trim();
+      localStorage.setItem('groq_api_key', localGroqKey);
+      alert('Groq API Key saved for this session!');
+    }
+  });
+}
 
 document.getElementById('refreshBtn').addEventListener('click', () => {
   fetchTelemetry();

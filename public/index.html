@@ -27,7 +27,7 @@
             <span class="badge-branch">TEST BRANCH</span>
             <span class="badge-live"><span class="live-dot pulse-green"></span> LIVE</span>
           </div>
-          <p class="subtitle">Solar Battery Management &bull; ML Anomaly Engine &bull; Groq AI</p>
+          <p class="subtitle">Solar Battery Management &bull; DC Load Telemetry &bull; Energy Monitoring System</p>
         </div>
       </div>
       
@@ -43,20 +43,14 @@
           <span class="db-name">Firebase RTDB</span>
         </div>
 
-        <div class="ai-status-badge" title="ML Event Engine Online">
-          <span class="ai-indicator pulse-blue"></span>
-          <span>ML Event Engine</span>
+        <div class="db-badge" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3);" title="Physical ESP32 Bench Online">
+          <span class="live-dot pulse-green"></span>
+          <span style="color: var(--success); font-weight: 700;">ESP32 Bench Connected</span>
         </div>
 
         <!-- Theme Toggle (Dark / Light) -->
         <button id="themeToggleBtn" class="btn btn-icon btn-sm" title="Toggle Dark/Light Mode">
           <span id="themeIcon">☀️</span>
-        </button>
-
-        <!-- Groq Key Config -->
-        <button id="apiKeyBtn" class="btn btn-secondary btn-sm" title="Configure Groq API Key">
-          <span>🔑</span>
-          <span class="btn-text">Groq Key</span>
         </button>
 
         <!-- Refresh Button -->
@@ -87,13 +81,7 @@
         </button>
         <button class="view-tab" data-view="mcp" id="tabMcpBtn">
           <span class="tab-icon">🧠</span>
-          <span class="tab-text">PyTorch &amp; MCP</span>
-          <span class="tab-pill" style="background: rgba(16, 185, 129, 0.2); color: var(--success); font-weight: 800;">ChatGPT</span>
-        </button>
-        <button class="view-tab" data-view="chat" id="tabChatBtn">
-          <span class="tab-icon">💬</span>
-          <span class="tab-text">AI Copilot</span>
-          <span class="tab-badge-dot pulse-green"></span>
+          <span class="tab-text">Neural Model &amp; Learning</span>
         </button>
         <button class="view-tab" data-view="schematics" id="tabSchematicsBtn">
           <span class="tab-icon">📐</span>
@@ -122,67 +110,79 @@
     <!-- ======================================================== -->
     <main class="view-container active" id="view-overview">
       
-      <!-- Interactive SVG Solar Power Flow Pipeline -->
+      <!-- Physical Energy Flow Topology Strip -->
       <section class="card flow-card">
-        <div class="card-header-clean">
-          <div class="card-title">
-            <span>☀️</span> Real-Time Solar &amp; Multi-Load Energy Flow
+        <div class="flow-header">
+          <div class="flow-title">
+            <span class="flow-icon">☀️</span>
+            <div>
+              <h3>Solar Energy &amp; Electrical Load Architecture</h3>
+              <p>Solar energy rail strictly supplies the DC LED load &bull; ESP32 is powered via independent external rail</p>
+            </div>
           </div>
-          <div class="flow-status-pill">
-            <span class="pulse-green"></span> Physical Telemetry Synchronized
+          <div class="flow-legend">
+            <span class="badge-mini-real" style="background: rgba(245, 158, 11, 0.15); color: #d97706; font-weight: 700;">☀️ Solar ➔ DC LED Only</span>
+            <span class="badge-mini-bias" style="background: rgba(59, 130, 246, 0.15); color: #2563eb; font-weight: 700;">🔌 ESP32: External 5V Supply</span>
           </div>
         </div>
 
         <div class="power-flow-container">
           <!-- Flow Stage 1: Solar & Battery -->
-          <div class="flow-node node-solar">
+          <div class="flow-node node-solar" style="border-left: 4px solid #f59e0b;">
             <div class="node-icon">☀️🔋</div>
             <div class="node-content">
-              <strong>Solar Battery Bank</strong>
-              <span class="node-detail">12.6V Storage Rail &bull; SoH: 94%</span>
-              <div class="node-badge" id="flowSolarStatus">FLOAT MAINTENANCE</div>
+              <strong>Solar PV &amp; Battery Bank</strong>
+              <span class="node-detail">12V Clean Energy Generation Rail</span>
+              <div class="node-badge" id="flowSolarStatus">SOLAR GENERATION ACTIVE</div>
             </div>
           </div>
 
-          <!-- Flow Arrow 1 -->
+          <!-- Flow Arrow: Solar to LED Load -->
           <div class="flow-connector">
-            <div class="flow-line"><div class="flow-particle"></div></div>
-            <span class="flow-label">DC Bus</span>
+            <div class="flow-line"><div class="flow-particle" style="background: #f59e0b;"></div></div>
+            <span class="flow-label" style="color: #d97706; font-weight: 700;">Solar Rail ➔</span>
           </div>
 
-          <!-- Flow Stage 2: ESP32 Smart Edge -->
-          <div class="flow-node node-mcu">
-            <div class="node-icon">🧠</div>
-            <div class="node-content">
-              <strong>ESP32 Smart Gateway</strong>
-              <span class="node-detail">GPIO 32, 33, 34, 35 &bull; 1000ms</span>
-              <div class="node-badge badge-green" id="flowTotalPower">0.00 W Total</div>
+          <!-- Flow Stage 2: Direct Solar-Powered DC LED Load -->
+          <div class="flow-node" style="border: 2px solid #0284c7; background: var(--bg-card); min-width: 240px;">
+            <div class="node-icon">💡</div>
+            <div class="node-content" style="flex: 1;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong>DC LED Fixture</strong>
+                <span class="status-micro" id="flowLedState">OFF</span>
+              </div>
+              <span class="node-detail" style="color: #0284c7; font-weight: 700;">Direct Solar-Powered Load</span>
+              <div class="node-badge badge-green" id="flowLedPower" style="font-size: 0.82rem; font-weight: 800; margin-top: 4px;">0.00 W</div>
             </div>
           </div>
 
-          <!-- Flow Arrow 2 -->
-          <div class="flow-connector">
-            <div class="flow-line"><div class="flow-particle"></div></div>
-            <span class="flow-label">Monitored Loads</span>
+          <!-- Flow Arrow: Auxiliary Separation -->
+          <div class="flow-connector" style="min-width: 40px; opacity: 0.5;">
+            <div style="width: 2px; height: 42px; background: var(--border-light); margin: 0 auto;"></div>
           </div>
 
-          <!-- Flow Stage 3: Real Physical Bench Loads (Strictly Real Hardware - No Mock) -->
+          <!-- Flow Stage 3: Aux DC Pump Load & External ESP32 Sensing Unit -->
           <div class="flow-loads-group real-group">
             <div class="flow-group-title">
-              <span class="badge-mini-real">🟢 REAL HARDWARE BENCH</span>
+              <span>AUXILIARY BENCH LOADS &amp; SENSING</span>
               <span class="badge-mini-bias" id="biasFlowBadge">Zero-Bias: Active</span>
             </div>
             <div class="load-pill-item item-real">
-              <span class="lp-icon">💡</span>
-              <span class="lp-name">DC LED Fixture:</span>
-              <strong id="flowLedPower">0.00 W</strong>
-              <span class="status-micro" id="flowLedState">OFF</span>
-            </div>
-            <div class="load-pill-item item-real">
               <span class="lp-icon">💧</span>
-              <span class="lp-name">5V Pump Motor:</span>
+              <div>
+                <span class="lp-name">5V Pump Motor:</span>
+                <span style="display: block; font-size: 0.68rem; color: var(--text-muted);">Bench Auxiliary DC Rail</span>
+              </div>
               <strong id="flowMotorPower">0.00 W</strong>
               <span class="status-micro" id="flowMotorState">OFF</span>
+            </div>
+            <div class="load-pill-item item-real" style="border-left: 3px solid #3b82f6;">
+              <span class="lp-icon">🔌</span>
+              <div>
+                <span class="lp-name">ESP32 MCU:</span>
+                <span style="display: block; font-size: 0.68rem; color: #3b82f6; font-weight: 700;">External 5V (Independent)</span>
+              </div>
+              <span class="badge-tag tag-blue" style="font-size: 0.7rem;">Sensing Only</span>
             </div>
           </div>
         </div>
@@ -190,17 +190,35 @@
 
       <!-- Executive KPI Cards -->
       <section class="kpi-strip">
+        <div class="kpi-card" style="border-left: 4px solid #f59e0b;">
+          <div class="kpi-icon kpi-solar">☀️</div>
+          <div class="kpi-details">
+            <span class="kpi-label">SOLAR LOAD (DC LED)</span>
+            <div class="kpi-value"><span id="kpiSolarLedPower">0.00</span> <small>W</small></div>
+            <span class="kpi-sub" style="color: #d97706; font-weight: 600;">Direct Solar Rail</span>
+          </div>
+        </div>
+
+        <div class="kpi-card" style="border-left: 4px solid #10b981;">
+          <div class="kpi-icon kpi-green">💧</div>
+          <div class="kpi-details">
+            <span class="kpi-label">AUX LOAD (5V PUMP)</span>
+            <div class="kpi-value"><span id="kpiMotorPower">0.00</span> <small>W</small></div>
+            <span class="kpi-sub">Bench Auxiliary Supply</span>
+          </div>
+        </div>
+
         <div class="kpi-card">
           <div class="kpi-icon kpi-blue">⚡</div>
           <div class="kpi-details">
-            <span class="kpi-label">TOTAL INSTANT LOAD</span>
+            <span class="kpi-label">TOTAL MONITORED LOAD</span>
             <div class="kpi-value"><span id="kpiTotalPower">0.0</span> <small>W</small></div>
             <span class="kpi-sub" id="kpiPowerFormula">P = (V_led × I_led) + (V_pump × I_pump)</span>
           </div>
         </div>
 
         <div class="kpi-card">
-          <div class="kpi-icon kpi-green">📊</div>
+          <div class="kpi-icon kpi-purple">📊</div>
           <div class="kpi-details">
             <span class="kpi-label">CUMULATIVE UNITS</span>
             <div class="kpi-value"><span id="kpiTotalUnits">0.0000</span> <small>kWh</small></div>
@@ -216,148 +234,124 @@
             <span class="kpi-sub">Strict Server Calculation</span>
           </div>
         </div>
-
-        <div class="kpi-card">
-          <div class="kpi-icon kpi-purple">📅</div>
-          <div class="kpi-details">
-            <span class="kpi-label">30-DAY PROJECTION</span>
-            <div class="kpi-value"><span id="kpiMonthlyCostINR">₹0.00</span> <small id="kpiMonthlyUnits">0 Units</small></div>
-            <span class="kpi-sub">720-Hour Extrapolation</span>
-          </div>
-        </div>
       </section>
 
-      <!-- Main Dual Telemetry & Quick Chat Split Layout -->
-      <div class="content-split-grid">
-        <!-- Left: Telemetry Gauges -->
-        <div class="telemetry-column">
-          <div class="loads-grid">
-            
-            <!-- Load 1: DC LED Fixture -->
-            <div class="card device-card led-theme">
-              <div class="device-card-header">
-                <div class="device-title">
-                  <span class="device-dot dot-led"></span>
-                  <h3>LOAD 1: DC LED FIXTURE</h3>
-                </div>
-                <span class="device-status-badge status-off" id="ledStatusBadge">OFF</span>
-              </div>
-              <div class="device-power-hero">
-                <span class="device-power-val" id="ledPowerVal">0.000</span>
-                <span class="device-power-unit">WATTS</span>
-              </div>
-              <div class="device-metrics-grid">
-                <div class="metric-box">
-                  <span class="m-label">VOLTAGE</span>
-                  <span class="m-val" id="ledVoltageVal">0.00 <small>V</small></span>
-                </div>
-                <div class="metric-box">
-                  <span class="m-label">CURRENT</span>
-                  <span class="m-val" id="ledCurrentVal">0.000 <small>A</small></span>
-                </div>
-                <div class="metric-box">
-                  <span class="m-label">ENERGY</span>
-                  <span class="m-val" id="ledEnergyVal">0.0000 <small>kWh</small></span>
-                </div>
-                <div class="metric-box inr-sub-box">
-                  <span class="m-label">COST (@ ₹8)</span>
-                  <span class="m-val" id="ledCostVal">₹0.00</span>
+      <!-- Main Dual Telemetry Layout (Full Width, Clean, Fresh & Spacious) -->
+      <div class="telemetry-full-container">
+        <div class="loads-grid">
+          
+          <!-- Load 1: DC LED Fixture (Solar-Powered) -->
+          <div class="card device-card led-theme" style="border-top: 4px solid #0284c7;">
+            <div class="device-card-header">
+              <div class="device-title">
+                <span class="device-dot dot-led"></span>
+                <div>
+                  <h3 style="font-size: 1.05rem;">LOAD 1: DC LED FIXTURE</h3>
+                  <span style="font-size: 0.72rem; color: #0284c7; font-weight: 700;">☀️ Powered Directly by Solar Battery Rail</span>
                 </div>
               </div>
-              <div class="device-foot-stats">
-                <span>ADC1 Pin: <strong>GPIO 32</strong> (ACS712 5A)</span>
-                <span>Avg: <strong id="ledAvgCurrent">0.00A</strong></span>
+              <span class="device-status-badge status-off" id="ledStatusBadge">OFF</span>
+            </div>
+            <div class="device-power-hero">
+              <span class="device-power-val" id="ledPowerVal">0.000</span>
+              <span class="device-power-unit">WATTS</span>
+            </div>
+            <div class="device-metrics-grid">
+              <div class="metric-box">
+                <span class="m-label">VOLTAGE</span>
+                <span class="m-val" id="ledVoltageVal">0.00 <small>V</small></span>
+              </div>
+              <div class="metric-box">
+                <span class="m-label">CURRENT</span>
+                <span class="m-val" id="ledCurrentVal">0.000 <small>A</small></span>
+              </div>
+              <div class="metric-box">
+                <span class="m-label">ENERGY</span>
+                <span class="m-val" id="ledEnergyVal">0.0000 <small>kWh</small></span>
+              </div>
+              <div class="metric-box inr-sub-box">
+                <span class="m-label">COST (@ ₹8)</span>
+                <span class="m-val" id="ledCostVal">₹0.00</span>
               </div>
             </div>
-
-            <!-- Load 2: 5V DC Mini Pump Motor -->
-            <div class="card device-card pump-theme">
-              <div class="device-card-header">
-                <div class="device-title">
-                  <span class="device-dot dot-pump"></span>
-                  <h3>LOAD 2: 5V DC PUMP MOTOR</h3>
-                </div>
-                <span class="device-status-badge status-off" id="motorStatusBadge">OFF</span>
-              </div>
-              <div class="device-power-hero">
-                <span class="device-power-val" id="motorPowerVal">0.000</span>
-                <span class="device-power-unit">WATTS</span>
-              </div>
-              <div class="device-metrics-grid">
-                <div class="metric-box">
-                  <span class="m-label">VOLTAGE</span>
-                  <span class="m-val" id="motorVoltageVal">0.00 <small>V</small></span>
-                </div>
-                <div class="metric-box">
-                  <span class="m-label">CURRENT</span>
-                  <span class="m-val" id="motorCurrentVal">0.000 <small>A</small></span>
-                </div>
-                <div class="metric-box">
-                  <span class="m-label">ENERGY</span>
-                  <span class="m-val" id="motorEnergyVal">0.0000 <small>kWh</small></span>
-                </div>
-                <div class="metric-box inr-sub-box">
-                  <span class="m-label">COST (@ ₹8)</span>
-                  <span class="m-val" id="motorCostVal">₹0.00</span>
-                </div>
-              </div>
-              <div class="device-foot-stats">
-                <span>Motor State: <strong id="motorStateClassified">OFF (&lt;0.05A)</strong></span>
-                <span>1N4007 Diode: <strong>Protected</strong></span>
-              </div>
+            <div class="device-foot-stats">
+              <span>Energy Source: <strong style="color: #0284c7;">Direct Solar Rail</strong></span>
+              <span>Sense Pin: <strong>GPIO 32</strong> (ACS712 5A)</span>
+              <span>Avg Current: <strong id="ledAvgCurrent">0.00A</strong></span>
             </div>
           </div>
 
-          <!-- Quick Telemetry Simulation Bar -->
-          <div class="card sim-card">
-            <div class="sim-header">
-              <div class="sim-title">⚙️ Bench Testing &amp; Anomaly Simulator</div>
-              <div class="sim-actions">
-                <button class="btn-micro" onclick="triggerSimulation(0.393, 4.63, 0.183, 1.18)">Bench Baseline</button>
-                <button class="btn-micro btn-warn" onclick="triggerSimulation(0.393, 4.63, 1.85, 5.0)">Motor Surge (1.85A)</button>
-                <button class="btn-micro btn-danger" onclick="triggerSimulation(0.393, 4.63, 3.20, 4.8)">Motor Stall (3.2A)</button>
-                <button class="btn-micro" onclick="triggerSimulation(0, 0, 0, 0)">Power OFF</button>
+          <!-- Load 2: 5V DC Mini Pump Motor (Auxiliary Bench Load) -->
+          <div class="card device-card pump-theme" style="border-top: 4px solid #10b981;">
+            <div class="device-card-header">
+              <div class="device-title">
+                <span class="device-dot dot-pump"></span>
+                <div>
+                  <h3 style="font-size: 1.05rem;">LOAD 2: 5V DC PUMP MOTOR</h3>
+                  <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">⚡ Aux Bench DC Supply &bull; Inductive Load</span>
+                </div>
               </div>
+              <span class="device-status-badge status-off" id="motorStatusBadge">OFF</span>
+            </div>
+            <div class="device-power-hero">
+              <span class="device-power-val" id="motorPowerVal">0.000</span>
+              <span class="device-power-unit">WATTS</span>
+            </div>
+            <div class="device-metrics-grid">
+              <div class="metric-box">
+                <span class="m-label">VOLTAGE</span>
+                <span class="m-val" id="motorVoltageVal">0.00 <small>V</small></span>
+              </div>
+              <div class="metric-box">
+                <span class="m-label">CURRENT</span>
+                <span class="m-val" id="motorCurrentVal">0.000 <small>A</small></span>
+              </div>
+              <div class="metric-box">
+                <span class="m-label">ENERGY</span>
+                <span class="m-val" id="motorEnergyVal">0.0000 <small>kWh</small></span>
+              </div>
+              <div class="metric-box inr-sub-box">
+                <span class="m-label">COST (@ ₹8)</span>
+                <span class="m-val" id="motorCostVal">₹0.00</span>
+              </div>
+            </div>
+            <div class="device-foot-stats">
+              <span>Energy Source: <strong>Bench DC Rail</strong></span>
+              <span>Sense Pin: <strong>GPIO 33</strong> (ACS712 5A)</span>
+              <span>Motor State: <strong id="motorStateClassified">OFF (&lt;0.05A)</strong></span>
             </div>
           </div>
         </div>
 
-        <!-- Right: AI Copilot Mini-Drawer -->
-        <div class="chat-column">
-          <div class="card chat-card">
-            <div class="chat-card-header">
-              <div class="chat-title">
-                <span class="ai-avatar">🤖</span>
-                <div>
-                  <h4>GLM-5.3 AI Copilot</h4>
-                  <p class="chat-sub">fta/zai/glm-5.3 &bull; FreeTheAI</p>
-                </div>
-              </div>
-              <button class="btn-micro" id="clearChatBtn" title="Clear Conversation">Clear</button>
+        <!-- Hardware Bench Grounding & Power Isolation Banner -->
+        <div class="card" style="padding: 16px 20px; background: var(--bg-card);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary); margin-bottom: 2px;">
+                ⚡ Hardware Bench Telemetry Grounding &amp; Power Architecture
+              </h4>
+              <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.5;">
+                Solar power is strictly routed to the DC LED fixture &bull; ESP32 is powered via independent external 5V rail (isolated from solar drain) &bull; Star common ground reference unites ADC conditioning
+              </p>
             </div>
-
-            <!-- Quick Question Chips -->
-            <div class="chat-chips-scroll">
-              <button class="chip-btn" onclick="sendPrompt('Which appliance consumed the most energy today?')">⚡ Top Appliance</button>
-              <button class="chip-btn" onclick="sendPrompt('Why does the water pump voltage report 1.18V instead of 5V?')">🔍 1.18V Pump Check</button>
-              <button class="chip-btn" onclick="sendPrompt('Did any appliance experience an anomaly today?')">🚨 Anomaly History</button>
-              <button class="chip-btn" onclick="sendPrompt('What is the 30-day bill projection at ₹8 per kWh?')">💰 Bill Projection</button>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <span class="badge-mini-real">☀️ Solar Rail: DC LED</span>
+              <span class="badge-mini-bias" style="background: rgba(59, 130, 246, 0.15); color: #2563eb;">🔌 ESP32: External 5V Isolated</span>
+              <span class="badge-mini-bias" style="background: rgba(16, 185, 129, 0.15); color: #059669;">🛡️ Zero-Bias Deadband: Active</span>
             </div>
+          </div>
+        </div>
 
-            <!-- Messages Log -->
-            <div class="chat-messages" id="chatMessages">
-              <div class="chat-msg assistant">
-                <div class="msg-bubble">
-                  Hello! I am your <strong>S-3 IOT AI Copilot</strong> connected to the live telemetry engine and Electrical ML Event Database. Ask me anything about load power, anomalies, motor states, or bill estimates.
-                </div>
-              </div>
+        <!-- Quick Telemetry Simulation Bar -->
+        <div class="card sim-card" style="margin-top: 4px;">
+          <div class="sim-header">
+            <div class="sim-title">⚙️ Bench Testing &amp; Anomaly Simulator</div>
+            <div class="sim-actions">
+              <button class="btn-micro" onclick="triggerSimulation(0.393, 4.63, 0.183, 1.18)">Bench Baseline</button>
+              <button class="btn-micro btn-warn" onclick="triggerSimulation(0.393, 4.63, 1.85, 5.0)">Motor Surge (1.85A)</button>
+              <button class="btn-micro btn-danger" onclick="triggerSimulation(0.393, 4.63, 3.20, 4.8)">Motor Stall (3.2A)</button>
+              <button class="btn-micro" onclick="triggerSimulation(0, 0, 0, 0)">Power OFF</button>
             </div>
-
-            <!-- Chat Input Bar -->
-            <form class="chat-input-row" id="chatForm">
-              <input type="text" id="chatInput" placeholder="Ask about load power, motor surge, bill..." autocomplete="off">
-              <button type="submit" id="sendBtn" class="btn btn-primary">Send</button>
-            </form>
           </div>
         </div>
       </div>
@@ -683,52 +677,7 @@
       </section>
     </main>
 
-    <!-- ======================================================== -->
-    <!-- VIEW 5: FULL-SCREEN AI COPILOT VIEW                     -->
-    <!-- ======================================================== -->
-    <main class="view-container" id="view-chat">
-      <div class="chat-fullscreen-layout">
-        <div class="chat-left-info card">
-          <h3>⚡ AI Telemetry Grounding Contract</h3>
-          <p class="info-p">Powered by <strong>GLM-5.3 (fta/zai/glm-5.3 via FreeTheAI)</strong> with Groq fallback. Cites validated backend telemetry to eliminate hallucinations.</p>
-          
-          <div class="grounding-box">
-            <strong>Authoritative Metrics:</strong>
-            <ul>
-              <li>DC LED: <span id="fsChatLed">0.00 W</span></li>
-              <li>5V Motor: <span id="fsChatMotor">0.00 W</span></li>
-              <li>Total Load: <span id="fsChatTotal">0.00 W</span></li>
-              <li>Cumulative: <span id="fsChatUnits">0.0000 kWh</span></li>
-              <li>Tariff Rate: <strong>₹8.00 / Unit</strong></li>
-            </ul>
-          </div>
 
-          <div class="quick-prompts-group">
-            <span class="qp-title">Suggested Inquiries:</span>
-            <button class="btn-prompt" onclick="sendPrompt('Which appliance consumed the most energy today?')">Which appliance consumed the most energy?</button>
-            <button class="btn-prompt" onclick="sendPrompt('List all critical and medium severity anomalies from today')">Show recent electrical anomalies</button>
-            <button class="btn-prompt" onclick="sendPrompt('Explain the 1.18V pump reading versus its 5V rating')">Why is the pump voltage 1.18V?</button>
-            <button class="btn-prompt" onclick="sendPrompt('If the motor runs 12 hours daily, what is the 30-day bill?')">12-hour schedule billing calculation</button>
-          </div>
-        </div>
-
-        <div class="chat-right-panel card">
-          <div class="fs-chat-messages" id="fsChatMessages">
-            <div class="chat-msg assistant">
-              <div class="msg-bubble">
-                <strong>S-3 IOT Energy Analyst Online:</strong><br/>
-                I am connected directly to your hardware telemetry stream and the ML Event Detection engine. All calculations reflect strict mathematical DC formulas ($P = V \times I$) and ₹8.00/unit flat tariff calculations. How can I assist you?
-              </div>
-            </div>
-          </div>
-
-          <form class="fs-chat-input-row" id="fsChatForm">
-            <input type="text" id="fsChatInput" placeholder="Ask questions about appliances, telemetry anomalies, motor states..." autocomplete="off">
-            <button type="submit" class="btn btn-primary">Send Question</button>
-          </form>
-        </div>
-      </div>
-    </main>
 
     <!-- ======================================================== -->
     <!-- VIEW 5: CIRCUIT SCHEMATICS & PRESENTATION SLIDES        -->
