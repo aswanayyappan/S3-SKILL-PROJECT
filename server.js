@@ -982,9 +982,9 @@ app.post('/api/telemetry/simulate', (req, res) => {
   res.json({ success: true, data: telemetryCache });
 });
 
-// Endpoint: Groq AI Copilot with Event Retrieval Tool Contract
+// Endpoint: AI Copilot with Multi-Model Support (FreeTheAI GLM-5.3 & Groq)
 app.post('/api/chat', async (req, res) => {
-  const { message, history } = req.body;
+  const { message, history, provider, model, ftaiKey, groqKey } = req.body;
   if (!message) {
     return res.status(400).json({ error: 'Message is required' });
   }
@@ -1089,7 +1089,13 @@ ${JSON.stringify(systemPayload, null, 2)}
   ];
 
   try {
-    const aiResult = await dispatchAICompletion(formattedMessages, req.headers);
+    const options = {
+      provider: provider || req.headers['x-ai-provider'] || 'auto',
+      model: model || req.headers['x-ai-model'],
+      ftaiKey: ftaiKey || req.headers['x-ftai-key'] || process.env.FTAI_API_KEY || 'ftai_0b81473d41ee2a05ee2636d115e14951468f542016ce1337',
+      groqKey: groqKey || req.headers['x-groq-key'] || process.env.GROQ_API_KEY
+    };
+    const aiResult = await dispatchAICompletion(formattedMessages, options);
     res.json({
       reply: aiResult.reply,
       provider: aiResult.provider,
@@ -1107,19 +1113,48 @@ ${JSON.stringify(systemPayload, null, 2)}
 });
 
 // AI Completion Dispatcher: Primary -> FreeTheAI (GLM-5.3), Multi-Model Fallbacks, Groq
-async function dispatchAICompletion(messages, customHeaders = {}) {
-  const ftaiKey = customHeaders['x-ftai-key'] || process.env.FTAI_API_KEY || 'ftai_0b81473d41ee2a05ee2636d115e14951468f542016ce1337';
-  const groqKey = customHeaders['x-groq-key'] || process.env.GROQ_API_KEY;
+async function dispatchAICompletion(messages, options = {}) {
+  const ftaiKey = options.ftaiKey || process.env.FTAI_API_KEY || 'ftai_0b81473d41ee2a05ee2636d115e14951468f542016ce1337';
+  const groqKey = options.groqKey || process.env.GROQ_API_KEY;
+  const requestedProvider = (options.provider || 'auto').toLowerCase();
+  const requestedModel = options.model;
 
-  // Candidate models on FreeTheAI
-  const ftaiCandidates = [
-    process.env.FTAI_MODEL || 'fta/zai/glm-5.3',
-    'fta/zai/glm-5.3-flash',
-    'fta/zzz/deepseek-chat',
-    'fta/meow/gpt-4o-mini'
-  ];
+  // FreeTheAI Candidate Models
+  const ftaiCandidates = requestedModel && requestedModel.startsWith('fta/') 
+    ? [requestedModel, 'fta/zai/glm-5.3-flash', 'fta/zai/glm-5.3', 'fta/zzz/deepseek-chat', 'fta/meow/gpt-4o-mini']
+    : ['fta/zai/glm-5.3-flash', 'fta/zai/glm-5.3', 'fta/zzz/deepseek-chat', 'fta/meow/gpt-4o-mini'];
 
-  if (ftaiKey) {
+  // Groq Candidate Models (Official Supported Production Models)
+  const groqCandidates = requestedModel && !requestedModel.startsWith('fta/')
+    ? [requestedModel, 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768']
+    : ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'];
+
+  // Helper: Try Groq
+  const tryGroq = async () => {
+    if (!groqKey) return null;
+    const activeGroq = new Groq({ apiKey: groqKey });
+    for (const model of groqCandidates) {
+      try {
+        const chatCompletion = await activeGroq.chat.completions.create({
+          messages,
+          model,
+          temperature: 0.5,
+          max_tokens: 950
+        });
+        const content = chatCompletion.choices?.[0]?.message?.content;
+        if (content) {
+          return { reply: content, provider: 'Groq', model };
+        }
+      } catch (err) {
+        console.warn(`[AI Dispatcher] Groq ${model} failed:`, err.message);
+      }
+    }
+    return null;
+  };
+
+  // Helper: Try FreeTheAI
+  const tryFreeTheAi = async () => {
+    if (!ftaiKey) return null;
     for (const model of ftaiCandidates) {
       try {
         const response = await fetch('https://api.freetheai.org/v1/chat/completions', {
@@ -1141,46 +1176,41 @@ async function dispatchAICompletion(messages, customHeaders = {}) {
           const data = await response.json();
           const content = data.choices?.[0]?.message?.content;
           if (content) {
-            return {
-              reply: content,
-              provider: 'FreeTheAI',
-              model: model
-            };
+            return { reply: content, provider: 'FreeTheAI', model };
           }
         } else {
           const errData = await response.json().catch(() => ({}));
-          console.warn(`[AI Dispatcher] FreeTheAI model ${model} HTTP ${response.status}:`, errData?.error?.message || response.statusText);
+          console.warn(`[AI Dispatcher] FreeTheAI ${model} HTTP ${response.status}:`, errData?.error?.message || response.statusText);
         }
       } catch (err) {
-        console.warn(`[AI Dispatcher] FreeTheAI ${model} request error:`, err.message);
+        console.warn(`[AI Dispatcher] FreeTheAI ${model} error:`, err.message);
       }
     }
+    return null;
+  };
+
+  // Dispatch based on user selection or auto
+  if (requestedProvider === 'groq') {
+    const groqRes = await tryGroq();
+    if (groqRes) return groqRes;
+    console.warn('[AI Dispatcher] Groq failed, seamlessly falling back to FreeTheAI GLM-5.3...');
+    const ftaiRes = await tryFreeTheAi();
+    if (ftaiRes) return ftaiRes;
+  } else if (requestedProvider === 'freetheai') {
+    const ftaiRes = await tryFreeTheAi();
+    if (ftaiRes) return ftaiRes;
+    console.warn('[AI Dispatcher] FreeTheAI failed, falling back to Groq...');
+    const groqRes = await tryGroq();
+    if (groqRes) return groqRes;
+  } else {
+    // 'auto': try FreeTheAI (which has active key) first, then Groq
+    const ftaiRes = await tryFreeTheAi();
+    if (ftaiRes) return ftaiRes;
+    const groqRes = await tryGroq();
+    if (groqRes) return groqRes;
   }
 
-  // Fallback to Groq if FTA models fail or are not configured
-  if (groqKey) {
-    try {
-      const activeGroq = new Groq({ apiKey: groqKey });
-      const chatCompletion = await activeGroq.chat.completions.create({
-        messages,
-        model: 'openai/gpt-oss-120b',
-        temperature: 0.5,
-        max_tokens: 950
-      });
-      const content = chatCompletion.choices?.[0]?.message?.content;
-      if (content) {
-        return {
-          reply: content,
-          provider: 'Groq',
-          model: 'openai/gpt-oss-120b'
-        };
-      }
-    } catch (groqErr) {
-      console.warn('[AI Dispatcher] Groq fallback failed:', groqErr.message);
-    }
-  }
-
-  throw new Error('All AI models (FreeTheAI GLM-5.3 and Groq) are currently unavailable. Please try again.');
+  throw new Error('All AI models (FreeTheAI GLM-5.3 and Groq) are currently unavailable. Please check API keys or network connectivity.');
 }
 
 app.listen(PORT, () => {

@@ -64,12 +64,17 @@
       </div>
     </header>
 
-    <!-- Main Navigation Bar (4 View Modes) -->
+    <!-- Main Navigation Bar (5 View Modes) -->
     <nav class="view-switcher-bar">
       <div class="tabs-group" role="tablist">
         <button class="view-tab active" data-view="overview" id="tabOverviewBtn">
           <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           <span class="tab-text">Command Center</span>
+        </button>
+        <button class="view-tab" data-view="chat" id="tabChatBtn">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span class="tab-text">AI Copilot</span>
+          <span class="tab-pill" id="activeModelBadge" style="font-weight: 700; color: var(--accent-sky);">GLM-5.3</span>
         </button>
         <button class="view-tab" data-view="anomalies" id="tabAnomaliesBtn">
           <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -389,6 +394,174 @@
             </div>
           </div>
         </div>
+
+        <!-- Compact AI Copilot Card in Command Center -->
+        <div class="card chat-card" style="margin-top: 14px; height: 380px;">
+          <div class="chat-card-header">
+            <div class="chat-title">
+              <span class="brand-icon" style="width: 28px; height: 28px;">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </span>
+              <div>
+                <h4>Live AI Assistant &bull; Grounded Copilot</h4>
+                <span class="chat-sub">Grounded with real-time 6V solar, battery booster &amp; DC motor telemetry</span>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="badge-mini-real" id="miniAiModelBadge">FreeTheAI GLM-5.3</span>
+              <button class="btn btn-secondary btn-sm" onclick="switchView('chat')">Full Copilot View &rarr;</button>
+              <button class="btn-micro" id="clearChatBtn" title="Clear chat history">Clear</button>
+            </div>
+          </div>
+          <div class="chat-chips-scroll">
+            <button class="chip-btn" onclick="sendQuickPrompt('Explain current solar panel and battery state')">Solar State</button>
+            <button class="chip-btn" onclick="sendQuickPrompt('Are there any active motor stalls or surges?')">Motor Health</button>
+            <button class="chip-btn" onclick="sendQuickPrompt('Calculate today electricity bill charge')">Energy Bill</button>
+            <button class="chip-btn" onclick="sendQuickPrompt('What is the zero-bias sensor calibration status?')">Zero-Bias</button>
+          </div>
+          <div class="chat-messages" id="chatMessages">
+            <div class="chat-msg assistant">
+              <div class="msg-bubble">
+                <p>Hello! I am your <strong>S-3 IOT AI Copilot</strong>. I monitor your 6V solar panel, 3.7V Li-ion battery booster, DC LED, and DC motor in real-time. Ask me anything about your electrical telemetry or energy charges!</p>
+              </div>
+            </div>
+          </div>
+          <form class="chat-input-row" id="chatForm">
+            <input type="text" id="chatInput" placeholder="Ask about solar power, motor current, or anomalies..." autocomplete="off">
+            <button type="submit" class="btn btn-primary btn-sm">Send</button>
+          </form>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- ======================================================== -->
+    <!-- VIEW 2: FULL-SCREEN AI COPILOT WITH MULTI-MODEL SWITCHER  -->
+    <!-- ======================================================== -->
+    <main class="view-container" id="view-chat">
+      <div class="chat-fullscreen-layout">
+        
+        <!-- Left Column: Controls, Model Selector, & Live Grounding -->
+        <aside class="chat-left-info card">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+            <div>
+              <h3 style="font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+                <svg class="ui-icon" style="color: var(--accent-sky);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                AI Copilot Engine
+              </h3>
+              <p class="info-p" style="margin-top: 2px;">Multi-model electrical reasoning agent</p>
+            </div>
+            <span class="badge-source-real" id="fsAiStatusPill">ONLINE</span>
+          </div>
+
+          <!-- Model & Provider Selector Well -->
+          <div style="background: var(--bg-card-alt); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <label style="font-size: 0.70rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">AI Provider:</label>
+              <select id="aiProviderSelect" class="btn-micro" style="padding: 6px 10px; font-size: 0.8rem; background: var(--bg-card); color: var(--text-primary); border-radius: var(--radius-sm); border: 1px solid var(--border); outline: none;">
+                <option value="auto">Auto (Primary FreeTheAI with Fallbacks)</option>
+                <option value="freetheai" selected>FreeTheAI (GLM-5.3 Series)</option>
+                <option value="groq">Groq (LLaMA 3.3 70B &amp; 8B)</option>
+              </select>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <label style="font-size: 0.70rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Active Model:</label>
+              <select id="aiModelSelect" class="btn-micro" style="padding: 6px 10px; font-size: 0.8rem; background: var(--bg-card); color: var(--text-primary); border-radius: var(--radius-sm); border: 1px solid var(--border); outline: none;">
+                <optgroup label="FreeTheAI Models">
+                  <option value="fta/zai/glm-5.3-flash" selected>fta/zai/glm-5.3-flash (High Speed • Recommended)</option>
+                  <option value="fta/zai/glm-5.3">fta/zai/glm-5.3 (Full GLM-5.3 Model)</option>
+                  <option value="fta/zzz/deepseek-chat">fta/zzz/deepseek-chat (DeepSeek V3)</option>
+                  <option value="fta/meow/gpt-4o-mini">fta/meow/gpt-4o-mini (GPT-4o Mini)</option>
+                </optgroup>
+                <optgroup label="Groq Models">
+                  <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile (Groq LLaMA 70B)</option>
+                  <option value="llama-3.1-8b-instant">llama-3.1-8b-instant (Groq Ultra-Fast 8B)</option>
+                  <option value="mixtral-8x7b-32768">mixtral-8x7b-32768 (Groq Mixtral)</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <!-- Custom API Key Override Toggle -->
+            <details style="margin-top: 4px; font-size: 0.75rem;">
+              <summary style="cursor: pointer; color: var(--text-secondary); font-weight: 600;">Custom API Keys (Optional)</summary>
+              <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 8px;">
+                <div>
+                  <span style="font-size: 0.68rem; color: var(--text-muted); display: block;">FreeTheAI Key:</span>
+                  <input type="password" id="customFtaiKey" placeholder="ftai_..." style="width: 100%; font-size: 0.72rem; padding: 5px 8px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary);">
+                </div>
+                <div>
+                  <span style="font-size: 0.68rem; color: var(--text-muted); display: block;">Groq API Key:</span>
+                  <input type="password" id="customGroqKey" placeholder="gsk_..." style="width: 100%; font-size: 0.72rem; padding: 5px 8px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary);">
+                </div>
+                <button class="btn-micro" onclick="saveCustomAiKeys()" style="margin-top: 4px;">Save Keys Locally</button>
+              </div>
+            </details>
+          </div>
+
+          <!-- Real-Time Grounding Context Box -->
+          <div class="grounding-box">
+            <span style="font-size: 0.70rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
+              <svg class="ui-icon" style="color: var(--success);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              Live Telemetry Grounding
+            </span>
+            <ul>
+              <li>Solar DC LED: <strong id="fsChatLed" style="font-family: var(--font-mono); color: var(--accent-sky);">0.00 W</strong></li>
+              <li>Solar DC Motor: <strong id="fsChatMotor" style="font-family: var(--font-mono); color: var(--success);">0.00 W (OFF)</strong></li>
+              <li>Instant Monitored: <strong id="fsChatTotal" style="font-family: var(--font-mono); color: var(--text-primary);">0.00 W</strong></li>
+              <li>Energy &amp; Bill: <strong id="fsChatUnits" style="font-family: var(--font-mono); color: var(--solar-amber);">0.0000 kWh (₹0.00)</strong></li>
+            </ul>
+          </div>
+
+          <!-- Quick Prompts Section -->
+          <div class="quick-prompts-group">
+            <span class="qp-title">Suggested Inquiries</span>
+            <button class="btn-prompt" onclick="sendQuickPrompt('Explain current solar panel and battery state')">
+              &rarr; Explain 6V Solar &amp; Battery State
+            </button>
+            <button class="btn-prompt" onclick="sendQuickPrompt('Are there any active motor stalls or surges?')">
+              &rarr; Audit Motor Stall &amp; Surge Alarms
+            </button>
+            <button class="btn-prompt" onclick="sendQuickPrompt('Calculate today electricity bill charge')">
+              &rarr; Compute Tariff &amp; Electricity Charges
+            </button>
+            <button class="btn-prompt" onclick="sendQuickPrompt('What is the zero-bias sensor calibration status?')">
+              &rarr; Verify Sensor Zero-Bias Deadband
+            </button>
+          </div>
+        </aside>
+
+        <!-- Right Column: Chat Conversation Stream -->
+        <section class="chat-right-panel card">
+          <div class="chat-card-header">
+            <div class="chat-title">
+              <svg class="ui-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <div>
+                <h4>Interactive Energy Intelligence Thread</h4>
+                <span class="chat-sub" id="chatEngineSubtitle">Active Engine: FreeTheAI GLM-5.3 Flash &bull; Context Window Grounded</span>
+              </div>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-secondary btn-sm" id="fsClearChatBtn">Clear Conversation</button>
+            </div>
+          </div>
+
+          <div class="fs-chat-messages" id="fsChatMessages">
+            <div class="chat-msg assistant">
+              <div class="msg-bubble">
+                <p>Welcome! I am your <strong>S-3 IOT Electrical Intelligence Copilot</strong>.</p>
+                <p>I have direct access to your real-time telemetry from Firebase RTDB and the trained <strong>PyTorch S3ElectricalTransformer</strong> neural model. You can switch between <strong>FreeTheAI (GLM-5.3)</strong> and <strong>Groq (LLaMA 3.3)</strong> in the left control panel.</p>
+                <p>How can I assist you with your solar energy management or load monitoring today?</p>
+              </div>
+            </div>
+          </div>
+
+          <form class="fs-chat-input-row" id="fsChatForm">
+            <input type="text" id="fsChatInput" placeholder="Ask about solar power, motor current, or anomalies..." autocomplete="off">
+            <button type="submit" class="btn btn-primary">Send Message</button>
+          </form>
+        </section>
+
       </div>
     </main>
 

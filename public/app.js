@@ -3,6 +3,9 @@
 
 let chatHistory = [];
 let localGroqKey = localStorage.getItem('groq_api_key') || '';
+let localFtaiKey = localStorage.getItem('ftai_api_key') || '';
+let selectedProvider = localStorage.getItem('s3_ai_provider') || 'freetheai';
+let selectedModel = localStorage.getItem('s3_ai_model') || 'fta/zai/glm-5.3-flash';
 let currentFilter = 'all';
 
 // DOM Elements - Theme & Tabs
@@ -659,8 +662,70 @@ async function triggerSimulation(c1, v1, c2, v2) {
 }
 
 // ========================================================
-// 7. GROQ AI COPILOT CONVERSATION LOGIC
+// 7. AI COPILOT & MULTI-MODEL DISPATCHER (FreeTheAI & Groq)
 // ========================================================
+function initAiModelSelectors() {
+  const providerSelect = document.getElementById('aiProviderSelect');
+  const modelSelect = document.getElementById('aiModelSelect');
+  const customFtaiInput = document.getElementById('customFtaiKey');
+  const customGroqInput = document.getElementById('customGroqKey');
+  const activeModelBadge = document.getElementById('activeModelBadge');
+  const miniAiModelBadge = document.getElementById('miniAiModelBadge');
+  const chatSubtitle = document.getElementById('chatEngineSubtitle');
+
+  if (providerSelect) {
+    providerSelect.value = selectedProvider;
+    providerSelect.addEventListener('change', (e) => {
+      selectedProvider = e.target.value;
+      localStorage.setItem('s3_ai_provider', selectedProvider);
+      updateModelBadges();
+    });
+  }
+
+  if (modelSelect) {
+    modelSelect.value = selectedModel;
+    modelSelect.addEventListener('change', (e) => {
+      selectedModel = e.target.value;
+      localStorage.setItem('s3_ai_model', selectedModel);
+      updateModelBadges();
+    });
+  }
+
+  if (customFtaiInput && localFtaiKey) customFtaiInput.value = localFtaiKey;
+  if (customGroqInput && localGroqKey) customGroqInput.value = localGroqKey;
+
+  updateModelBadges();
+
+  function updateModelBadges() {
+    const shortName = selectedModel.includes('/') ? selectedModel.split('/').pop() : selectedModel.split('-')[0];
+    if (activeModelBadge) activeModelBadge.textContent = shortName.toUpperCase();
+    if (miniAiModelBadge) miniAiModelBadge.textContent = `${selectedProvider === 'groq' ? 'Groq' : 'FreeTheAI'} ${shortName}`;
+    if (chatSubtitle) chatSubtitle.textContent = `Active Engine: ${selectedProvider === 'groq' ? 'Groq' : 'FreeTheAI'} (${selectedModel}) • Grounded Telemetry`;
+  }
+}
+
+window.saveCustomAiKeys = function() {
+  const ftaiVal = document.getElementById('customFtaiKey')?.value.trim();
+  const groqVal = document.getElementById('customGroqKey')?.value.trim();
+  if (ftaiVal !== undefined) {
+    localFtaiKey = ftaiVal;
+    localStorage.setItem('ftai_api_key', ftaiVal);
+  }
+  if (groqVal !== undefined) {
+    localGroqKey = groqVal;
+    localStorage.setItem('groq_api_key', groqVal);
+  }
+  alert('Custom AI API keys saved locally in your browser storage!');
+};
+
+window.sendQuickPrompt = function(text) {
+  const cInput = document.getElementById('chatInput');
+  const fsInput = document.getElementById('fsChatInput');
+  if (cInput) cInput.value = text;
+  if (fsInput) fsInput.value = text;
+  sendPrompt(text);
+};
+
 async function sendPrompt(text) {
   if (!text || !text.trim()) return;
 
@@ -673,13 +738,18 @@ async function sendPrompt(text) {
   try {
     const headers = { 'Content-Type': 'application/json' };
     if (localGroqKey) headers['x-groq-key'] = localGroqKey;
+    if (localFtaiKey) headers['x-ftai-key'] = localFtaiKey;
 
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers,
       body: JSON.stringify({
         message: text,
-        history: chatHistory.slice(-8)
+        history: chatHistory.slice(-8),
+        provider: selectedProvider,
+        model: selectedModel,
+        ftaiKey: localFtaiKey || undefined,
+        groqKey: localGroqKey || undefined
       })
     });
 
@@ -687,7 +757,7 @@ async function sendPrompt(text) {
     typingEl.remove();
 
     if (json.reply) {
-      appendChatMessage('assistant', json.reply, json.model);
+      appendChatMessage('assistant', json.reply, json.model, json.provider);
       chatHistory.push({ role: 'user', content: text });
       chatHistory.push({ role: 'assistant', content: json.reply });
       if (json.telemetry) updateUI(json.telemetry);
@@ -700,7 +770,7 @@ async function sendPrompt(text) {
   }
 }
 
-function appendChatMessage(role, content, model = null) {
+function appendChatMessage(role, content, model = null, provider = null) {
   const el = document.createElement('div');
   el.className = `chat-msg ${role}`;
   const bubble = document.createElement('div');
@@ -709,7 +779,11 @@ function appendChatMessage(role, content, model = null) {
   if (role === 'assistant') {
     let html = marked.parse(content);
     if (model) {
-      html += `<div style="margin-top: 6px; font-size: 0.68rem; color: #64748b; font-family: 'JetBrains Mono', monospace; border-top: 1px solid rgba(0,0,0,0.06); padding-top: 4px;">⚡ Model: ${model}</div>`;
+      const pName = provider || (model.startsWith('fta/') ? 'FreeTheAI' : 'Groq');
+      html += `<div style="margin-top: 8px; font-size: 0.68rem; color: var(--text-muted); font-family: var(--font-mono); border-top: 1px dashed var(--border); padding-top: 5px; display: flex; align-items: center; gap: 6px;">
+        <span class="live-dot pulse-green" style="width: 5px; height: 5px;"></span>
+        Engine: <strong>${pName}</strong> &bull; Model: <code>${model}</code>
+      </div>`;
     }
     bubble.innerHTML = html;
   } else {
@@ -731,7 +805,7 @@ function appendChatMessage(role, content, model = null) {
   return el;
 }
 
-// Form Handlers (if present)
+// Form Handlers
 if (chatForm) {
   chatForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -754,25 +828,20 @@ if (fsChatForm) {
   });
 }
 
-if (clearChatBtn) {
-  clearChatBtn.addEventListener('click', () => {
-    chatHistory = [];
-    if (chatMessages) {
-      chatMessages.innerHTML = `
-        <div class="chat-msg assistant">
-          <div class="msg-bubble">Conversation cleared. How can I assist you with facility telemetry or anomaly diagnostics?</div>
-        </div>
-      `;
-    }
-    if (fsChatMessages) {
-      fsChatMessages.innerHTML = `
-        <div class="chat-msg assistant">
-          <div class="msg-bubble">Conversation cleared. How can I assist you?</div>
-        </div>
-      `;
-    }
-  });
-}
+const clearBothChats = () => {
+  chatHistory = [];
+  const defaultHtml = `
+    <div class="chat-msg assistant">
+      <div class="msg-bubble">Conversation cleared. How can I assist you with facility telemetry or anomaly diagnostics?</div>
+    </div>
+  `;
+  if (chatMessages) chatMessages.innerHTML = defaultHtml;
+  if (fsChatMessages) fsChatMessages.innerHTML = defaultHtml;
+};
+
+if (clearChatBtn) clearChatBtn.addEventListener('click', clearBothChats);
+const fsClearChatBtn = document.getElementById('fsClearChatBtn');
+if (fsClearChatBtn) fsClearChatBtn.addEventListener('click', clearBothChats);
 
 // Configure Groq API Key (if present)
 const apiKeyBtn = document.getElementById('apiKeyBtn');
@@ -798,9 +867,10 @@ document.getElementById('refreshBtn').addEventListener('click', () => {
 // ========================================================
 window.addEventListener('DOMContentLoaded', () => {
   initTheme();
+  initAiModelSelectors();
   
   let savedView = localStorage.getItem('s3_active_view') || 'overview';
-  if (savedView === 'appliances' || savedView === 'chat') savedView = 'overview';
+  if (savedView === 'appliances') savedView = 'overview';
   switchView(savedView);
 
   // Initial fetches
