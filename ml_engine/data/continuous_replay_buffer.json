@@ -1,6 +1,6 @@
 {
   "created_at": 1793813077.2515059,
-  "total_cycles_completed": 19,
+  "total_cycles_completed": 20,
   "samples": [
     {
       "bucket_id": "29889771",
@@ -3509,5 +3509,5 @@
       "state_name": "SENSOR_BIAS_ANOMALY"
     }
   ],
-  "last_ingested_at": 1793818289.8173652
+  "last_ingested_at": 1793818588.7127717
 }
