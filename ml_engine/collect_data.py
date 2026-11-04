@@ -209,3 +209,4 @@ def collect_and_build_dataset(output_path="ml_engine/data/firebase_electrical_da
 
 if __name__ == "__main__":
     collect_and_build_dataset()
+

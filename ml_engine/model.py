@@ -89,3 +89,4 @@ if __name__ == "__main__":
     print("Class Probabilities:", output["probabilities"])
     print("Predicted Power:", output["predicted_power"].item())
     print("Predicted Bias Offsets:", output["predicted_bias"])
+

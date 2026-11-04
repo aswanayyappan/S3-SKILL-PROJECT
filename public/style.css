@@ -1286,6 +1286,39 @@ body {
   transform: scale(1.02);
 }
 
+.schematic-card-full {
+  grid-column: 1 / -1;
+  border-top: 2px solid var(--accent-cyan);
+}
+
+.schematic-card-full .schematic-img-wrap img {
+  max-height: 560px;
+}
+
+.schematic-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.schematic-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.schematic-chip strong {
+  color: var(--text-main);
+}
+
 .pres-download-card {
   display: flex;
   justify-content: space-between;
