@@ -886,3 +886,90 @@ window.addEventListener('DOMContentLoaded', () => {
   setInterval(fetchPyTorchLive, 4000);
   setInterval(fetchContinuousLearningStatus, 5000);
 });
+
+
+// ========================================================
+// 9. SINGLE-PAGE ARCHITECTURE: EMBEDDED SLIDES & LIGHTBOX
+// (Strictly Zero Page Redirection • 100% In-Page Navigation)
+// ========================================================
+let currentEmbeddedSlide = 1;
+const totalEmbeddedSlides = 10;
+
+const slideCategories = [
+  "Project Overview",
+  "Technical Agenda",
+  "Objective & Problem",
+  "System Architecture",
+  "Hardware Schematics",
+  "Experimental Verification",
+  "Conclusion & Matrix",
+  "Future Scope AI",
+  "Modular Switch Circuit",
+  "Demonstration Complete"
+];
+
+window.goToSlide = function(num) {
+  num = parseInt(num, 10);
+  if (isNaN(num) || num < 1) num = 1;
+  if (num > totalEmbeddedSlides) num = totalEmbeddedSlides;
+  currentEmbeddedSlide = num;
+  updateEmbeddedSlideView();
+};
+
+window.navSlide = function(direction) {
+  goToSlide(currentEmbeddedSlide + direction);
+};
+
+window.toggleSlideFullscreen = function() {
+  const deck = document.getElementById('embeddedDeckViewport');
+  if (!deck) return;
+  if (!document.fullscreenElement) {
+    deck.requestFullscreen().catch(err => console.warn('Fullscreen request failed:', err));
+  } else {
+    document.exitFullscreen().catch(err => console.warn('Exit fullscreen failed:', err));
+  }
+};
+
+function updateEmbeddedSlideView() {
+  document.querySelectorAll('.embedded-slide').forEach((el, idx) => {
+    el.classList.toggle('active', idx + 1 === currentEmbeddedSlide);
+  });
+  const counter = document.getElementById('currentSlideCounter');
+  if (counter) counter.textContent = `Slide ${currentEmbeddedSlide} of ${totalEmbeddedSlides}`;
+  const catTag = document.getElementById('currentSlideCategoryTag');
+  if (catTag && slideCategories[currentEmbeddedSlide - 1]) {
+    catTag.textContent = slideCategories[currentEmbeddedSlide - 1].toUpperCase();
+  }
+  const jumpSelect = document.getElementById('slideJumpSelect');
+  if (jumpSelect) jumpSelect.value = currentEmbeddedSlide;
+  document.querySelectorAll('.deck-dot').forEach((dot, idx) => {
+    dot.classList.toggle('active', idx + 1 === currentEmbeddedSlide);
+  });
+}
+
+// In-Page Lightbox Modal (Zero Page Redirection)
+window.openLightboxModal = function(src, title) {
+  const modal = document.getElementById('imageLightboxModal');
+  const img = document.getElementById('lightboxImg');
+  const t = document.getElementById('lightboxTitle');
+  if (!modal || !img) return;
+  img.src = src;
+  if (t) t.textContent = title || 'High-Resolution Hardware Schematic';
+  modal.classList.add('active');
+  document.body.style.overflow = 'hidden';
+};
+
+window.closeLightboxModal = function(e) {
+  if (e && e.target && e.target.closest('.lightbox-content') && !e.target.closest('.btn-close-modal')) return;
+  const modal = document.getElementById('imageLightboxModal');
+  if (modal) modal.classList.remove('active');
+  document.body.style.overflow = '';
+};
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeLightboxModal();
+  if (document.getElementById('view-schematics')?.classList.contains('active')) {
+    if (e.key === 'ArrowLeft') navSlide(-1);
+    if (e.key === 'ArrowRight') navSlide(1);
+  }
+});
