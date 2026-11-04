@@ -564,7 +564,7 @@ async function sendPrompt(text) {
     typingEl.remove();
 
     if (json.reply) {
-      appendChatMessage('assistant', json.reply);
+      appendChatMessage('assistant', json.reply, json.model);
       chatHistory.push({ role: 'user', content: text });
       chatHistory.push({ role: 'assistant', content: json.reply });
       if (json.telemetry) updateUI(json.telemetry);
@@ -577,14 +577,18 @@ async function sendPrompt(text) {
   }
 }
 
-function appendChatMessage(role, content) {
+function appendChatMessage(role, content, model = null) {
   const el = document.createElement('div');
   el.className = `chat-msg ${role}`;
   const bubble = document.createElement('div');
   bubble.className = 'msg-bubble';
   
   if (role === 'assistant') {
-    bubble.innerHTML = marked.parse(content);
+    let html = marked.parse(content);
+    if (model) {
+      html += `<div style="margin-top: 6px; font-size: 0.68rem; color: #64748b; font-family: 'JetBrains Mono', monospace; border-top: 1px solid rgba(0,0,0,0.06); padding-top: 4px;">⚡ Model: ${model}</div>`;
+    }
+    bubble.innerHTML = html;
   } else {
     bubble.textContent = content;
   }

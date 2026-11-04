@@ -955,43 +955,109 @@ You operate a hybrid AI architecture: continuous Electrical ML Event Detection +
 ${JSON.stringify(systemPayload, null, 2)}
 \`\`\``;
 
-  const clientApiKey = req.headers['x-groq-key'] || process.env.GROQ_API_KEY;
-
-  if (!clientApiKey) {
-    return res.status(200).json({
-      reply: `⚠️ **Groq API Key Required**\n\n**Live Telemetry Status:**\n- **LED:** ${led.voltage.toFixed(2)} V × ${led.current.toFixed(3)} A = **${led.instantPowerWatts.toFixed(3)} W**\n- **Pump Motor:** ${motor.voltage.toFixed(2)} V × ${motor.current.toFixed(3)} A = **${motor.instantPowerWatts.toFixed(3)} W** (${motor.status})\n- **Recent Anomaly:** ${recentEvents[0]?.appliance} (${recentEvents[0]?.event_type}) - Severity: ${recentEvents[0]?.severity.toUpperCase()}\n\nPlease add your \`GROQ_API_KEY\` to chat.`
-    });
-  }
+  const formattedMessages = [
+    { role: 'system', content: systemPrompt },
+    ...(Array.isArray(history) ? history.map(h => ({
+      role: h.role === 'user' ? 'user' : 'assistant',
+      content: String(h.content || '')
+    })) : []),
+    { role: 'user', content: message }
+  ];
 
   try {
-    const activeGroq = new Groq({ apiKey: clientApiKey });
-
-    const formattedMessages = [
-      { role: 'system', content: systemPrompt },
-      ...(Array.isArray(history) ? history.map(h => ({
-        role: h.role === 'user' ? 'user' : 'assistant',
-        content: String(h.content || '')
-      })) : []),
-      { role: 'user', content: message }
-    ];
-
-    const chatCompletion = await activeGroq.chat.completions.create({
-      messages: formattedMessages,
-      model: 'openai/gpt-oss-120b',
-      temperature: 0.5,
-      max_tokens: 950
+    const aiResult = await dispatchAICompletion(formattedMessages, req.headers);
+    res.json({
+      reply: aiResult.reply,
+      provider: aiResult.provider,
+      model: aiResult.model,
+      telemetry,
+      events: recentEvents
     });
-
-    const reply = chatCompletion.choices[0]?.message?.content || "No response received from Groq AI.";
-    res.json({ reply, telemetry, events: recentEvents });
   } catch (err) {
-    console.error("Groq Error:", err.message);
+    console.error("AI Copilot Error:", err.message);
     res.status(500).json({
-      error: "Error communicating with Groq API",
+      error: "Error communicating with AI Copilot",
       details: err.message
     });
   }
 });
+
+// AI Completion Dispatcher: Primary -> FreeTheAI (GLM-5.3), Multi-Model Fallbacks, Groq
+async function dispatchAICompletion(messages, customHeaders = {}) {
+  const ftaiKey = customHeaders['x-ftai-key'] || process.env.FTAI_API_KEY || 'ftai_0b81473d41ee2a05ee2636d115e14951468f542016ce1337';
+  const groqKey = customHeaders['x-groq-key'] || process.env.GROQ_API_KEY;
+
+  // Candidate models on FreeTheAI
+  const ftaiCandidates = [
+    process.env.FTAI_MODEL || 'fta/zai/glm-5.3',
+    'fta/zai/glm-5.3-flash',
+    'fta/zzz/deepseek-chat',
+    'fta/meow/gpt-4o-mini'
+  ];
+
+  if (ftaiKey) {
+    for (const model of ftaiCandidates) {
+      try {
+        const response = await fetch('https://api.freetheai.org/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${ftaiKey}`,
+            'Content-Type': 'application/json',
+            'User-Agent': 'Mozilla/5.0'
+          },
+          body: JSON.stringify({
+            model,
+            messages,
+            temperature: 0.5,
+            max_tokens: 950
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) {
+            return {
+              reply: content,
+              provider: 'FreeTheAI',
+              model: model
+            };
+          }
+        } else {
+          const errData = await response.json().catch(() => ({}));
+          console.warn(`[AI Dispatcher] FreeTheAI model ${model} HTTP ${response.status}:`, errData?.error?.message || response.statusText);
+        }
+      } catch (err) {
+        console.warn(`[AI Dispatcher] FreeTheAI ${model} request error:`, err.message);
+      }
+    }
+  }
+
+  // Fallback to Groq if FTA models fail or are not configured
+  if (groqKey) {
+    try {
+      const activeGroq = new Groq({ apiKey: groqKey });
+      const chatCompletion = await activeGroq.chat.completions.create({
+        messages,
+        model: 'openai/gpt-oss-120b',
+        temperature: 0.5,
+        max_tokens: 950
+      });
+      const content = chatCompletion.choices?.[0]?.message?.content;
+      if (content) {
+        return {
+          reply: content,
+          provider: 'Groq',
+          model: 'openai/gpt-oss-120b'
+        };
+      }
+    } catch (groqErr) {
+      console.warn('[AI Dispatcher] Groq fallback failed:', groqErr.message);
+    }
+  }
+
+  throw new Error('All AI models (FreeTheAI GLM-5.3 and Groq) are currently unavailable. Please try again.');
+}
 
 app.listen(PORT, () => {
   console.log(`===============================================`);
