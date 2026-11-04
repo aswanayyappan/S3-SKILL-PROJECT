@@ -93,8 +93,10 @@ let eventsDatabase = [
     voltage: 5.0,
     current: 1.85,
     power: 9.25,
+    is_physical: true,
+    source: "REAL_ESP32_BENCH",
     timestamp: new Date(Date.now() - 1000 * 60 * 35).toISOString(),
-    details: "Motor inductive startup transient surge (1.85A peak, 420ms duration). Classified as normal inrush."
+    details: "Physical motor inductive startup transient surge (1.85A peak, 420ms duration). Measured on GPIO 33."
   },
   {
     event_id: "EVT1002",
@@ -107,8 +109,10 @@ let eventsDatabase = [
     voltage: 1.18,
     current: 0.183,
     power: 0.216,
+    is_physical: true,
+    source: "REAL_ESP32_BENCH",
     timestamp: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
-    details: "ESP32 reports 1.18V on 5V rated DC pump. Sensor divider attenuation or voltage probe offset requires verification."
+    details: "Physical ESP32 ADC reports 1.18V on 5V rated DC pump. Sensor divider attenuation or voltage probe offset requires verification."
   },
   {
     event_id: "EVT1003",
@@ -121,8 +125,10 @@ let eventsDatabase = [
     voltage: 230.0,
     current: 0.42,
     power: 96.6,
+    is_physical: false,
+    source: "MOCK_SIMULATION",
     timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-    details: "Current draw is 18% higher than learned baseline pattern (0.35A -> 0.42A). Mechanical bearing friction suspected."
+    details: "[MOCK MODEL] Simulated current draw 18% above learned baseline (0.35A -> 0.42A). Mechanical bearing friction suspected."
   },
   {
     event_id: "EVT1004",
@@ -135,8 +141,10 @@ let eventsDatabase = [
     voltage: 12.6,
     current: 0.45,
     power: 5.67,
+    is_physical: false,
+    source: "MOCK_SIMULATION",
     timestamp: new Date(Date.now() - 1000 * 60 * 8).toISOString(),
-    details: "Lead-acid/LiFePO4 battery rail in steady float maintenance mode. State-of-Health (SoH) estimated at 94%."
+    details: "[MOCK MODEL] Simulated battery rail in float maintenance mode. State-of-Health (SoH) estimated at 94%."
   },
   {
     event_id: "EVT1005",
@@ -149,8 +157,10 @@ let eventsDatabase = [
     voltage: 4.63,
     current: 0.393,
     power: 1.82,
+    is_physical: true,
+    source: "REAL_ESP32_BENCH",
     timestamp: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
-    details: "Stable DC illumination load within nominal tolerances (4.63V / 0.393A)."
+    details: "Physical bench DC illumination load within nominal tolerances (4.63V / 0.393A on GPIO 32)."
   }
 ];
 
@@ -174,8 +184,10 @@ function evaluateTelemetryAnomalies(telemetry) {
         voltage: motorV,
         current: motorC,
         power: motorV * motorC,
+        is_physical: true,
+        source: "REAL_ESP32_BENCH",
         timestamp: new Date().toISOString(),
-        details: `CRITICAL ALERT: Motor stall detected (${motorC.toFixed(2)}A > 2.5A). Impeller blockage or locked rotor. Immediate thermal trip recommended!`
+        details: `CRITICAL REAL HARDWARE ALERT: Motor stall detected on bench (${motorC.toFixed(2)}A > 2.5A). Locked rotor or pump impeller jammed!`
       });
       if (eventsDatabase.length > 50) eventsDatabase.pop();
     }
@@ -196,8 +208,10 @@ function evaluateTelemetryAnomalies(telemetry) {
         voltage: motorV,
         current: motorC,
         power: motorV * motorC,
+        is_physical: true,
+        source: "REAL_ESP32_BENCH",
         timestamp: new Date().toISOString(),
-        details: `Transient inrush current detected (${motorC.toFixed(2)}A). Classified as normal motor starting acceleration.`
+        details: `REAL HARDWARE TELEMETRY: Inrush current surge detected on bench (${motorC.toFixed(2)}A). Classified as normal motor starting acceleration.`
       });
       if (eventsDatabase.length > 50) eventsDatabase.pop();
     }
@@ -532,13 +546,18 @@ app.get('/api/telemetry', async (req, res) => {
 
 // Endpoint: Anomaly & Event Detection Log (from idea.txt)
 app.get('/api/events', async (req, res) => {
-  const { appliance, severity } = req.query;
+  const { appliance, severity, source_type } = req.query;
   let filtered = [...eventsDatabase];
   if (appliance) {
     filtered = filtered.filter(e => e.appliance.toLowerCase().includes(appliance.toLowerCase()));
   }
   if (severity) {
     filtered = filtered.filter(e => e.severity.toLowerCase() === severity.toLowerCase());
+  }
+  if (source_type === 'real') {
+    filtered = filtered.filter(e => e.is_physical === true);
+  } else if (source_type === 'mock') {
+    filtered = filtered.filter(e => e.is_physical === false);
   }
   res.json({
     success: true,
@@ -553,12 +572,15 @@ app.get('/api/appliances', async (req, res) => {
   const led = telemetry.led;
   const motor = telemetry.dcMotor;
 
-  const appliances = [
+  // 1. Real Physical Bench Loads (Wired to ESP32 ADC)
+  const physicalAppliances = [
     {
-      id: "APP-01",
-      switch_id: "SW-01",
+      id: "REAL-01",
+      switch_id: "HW-PIN-33",
       name: "5V DC Water Pump",
-      category: "Inductive Motor",
+      category: "Real Physical Hardware",
+      badge: "REAL HARDWARE",
+      source_type: "real",
       status: motor.status,
       voltage: Number(motor.voltage.toFixed(2)),
       current: Number(motor.current.toFixed(3)),
@@ -566,15 +588,18 @@ app.get('/api/appliances', async (req, res) => {
       cumulative_kwh: Number(motor.cumulativeKwh.toFixed(4)),
       cost_inr: Number(motor.energyChargeINR.toFixed(2)),
       health_score: motor.voltage < 2.0 ? 76 : (motor.status === 'NORMAL RUNNING' ? 98 : 88),
-      anomaly_count: eventsDatabase.filter(e => e.appliance.includes("Pump")).length,
+      anomaly_count: eventsDatabase.filter(e => e.appliance.includes("Pump") && e.is_physical).length,
       icon: "💧",
-      is_physical: true
+      is_physical: true,
+      pin_info: "ESP32 GPIO 33 (Current) & GPIO 35 (Voltage)"
     },
     {
-      id: "APP-02",
-      switch_id: "SW-02",
+      id: "REAL-02",
+      switch_id: "HW-PIN-32",
       name: "DC LED Fixture",
-      category: "Lighting",
+      category: "Real Physical Hardware",
+      badge: "REAL HARDWARE",
+      source_type: "real",
       status: led.status,
       voltage: Number(led.voltage.toFixed(2)),
       current: Number(led.current.toFixed(3)),
@@ -582,31 +607,41 @@ app.get('/api/appliances', async (req, res) => {
       cumulative_kwh: Number(led.cumulativeKwh.toFixed(4)),
       cost_inr: Number(led.energyChargeINR.toFixed(2)),
       health_score: 99,
-      anomaly_count: eventsDatabase.filter(e => e.appliance.includes("LED")).length,
+      anomaly_count: eventsDatabase.filter(e => e.appliance.includes("LED") && e.is_physical).length,
       icon: "💡",
-      is_physical: true
-    },
+      is_physical: true,
+      pin_info: "ESP32 GPIO 32 (Current) & GPIO 34 (Voltage)"
+    }
+  ];
+
+  // 2. Mock / Simulated Appliances (Future Scope Modular Smart Switches)
+  const mockAppliances = [
     {
-      id: "APP-03",
+      id: "MOCK-01",
       switch_id: "SW-03",
       name: "Ceiling Fan",
-      category: "Smart Appliance",
+      category: "Mock / Simulated",
+      badge: "MOCK MODEL",
+      source_type: "mock",
       status: "ON",
       voltage: 230.0,
       current: 0.42,
       power: 96.6,
       cumulative_kwh: 0.842,
       cost_inr: 6.74,
-      health_score: 84,
+      health_score: 84, // Slightly degraded bearing friction
       anomaly_count: eventsDatabase.filter(e => e.appliance.includes("Fan")).length,
       icon: "🌀",
-      is_physical: false
+      is_physical: false,
+      pin_info: "Synthetic Simulation (Future Scope idea.txt)"
     },
     {
-      id: "APP-04",
+      id: "MOCK-02",
       switch_id: "SW-04",
       name: "Refrigerator",
-      category: "Cooling Compressor",
+      category: "Mock / Simulated",
+      badge: "MOCK MODEL",
+      source_type: "mock",
       status: "STANDBY",
       voltage: 230.0,
       current: 0.12,
@@ -616,29 +651,35 @@ app.get('/api/appliances', async (req, res) => {
       health_score: 95,
       anomaly_count: 0,
       icon: "❄️",
-      is_physical: false
+      is_physical: false,
+      pin_info: "Synthetic Simulation (Future Scope idea.txt)"
     },
     {
-      id: "APP-05",
+      id: "MOCK-03",
       switch_id: "SW-BATT",
       name: "Solar Battery Bank",
-      category: "Energy Storage",
+      category: "Mock / Simulated",
+      badge: "MOCK MODEL",
+      source_type: "mock",
       status: "DISCHARGING",
       voltage: 12.6,
       current: 0.95,
       power: 11.97,
       cumulative_kwh: 2.180,
       cost_inr: 0.00,
-      health_score: 94,
+      health_score: 94, // 94% SoH
       anomaly_count: 0,
       icon: "🔋",
-      is_physical: false
+      is_physical: false,
+      pin_info: "Synthetic Simulation (Future Scope idea.txt)"
     }
   ];
 
   res.json({
     success: true,
-    appliances
+    physical: physicalAppliances,
+    mock: mockAppliances,
+    appliances: [...physicalAppliances, ...mockAppliances]
   });
 });
 
@@ -775,6 +816,11 @@ You operate a hybrid AI architecture: continuous Electrical ML Event Detection +
 4. **DIAGNOSTIC RIGOR:** 
    - DC Pump motor is rated 5V DC. If telemetry reports 1.18V, explain this as sensor divider calibration skew, not brownout.
    - Normal starting surge is 1.2A-2.5A. Motor stall only occurs when $I > 2.5A$.
+
+5. **HARDWARE REALITY BOUNDARY (REAL BENCH vs MOCK SIMULATION):**
+   - **REAL PHYSICAL BENCH:** The DC LED Fixture (GPIO 32/34) and 5V DC Water Pump Motor (GPIO 33/35) are the ONLY physical hardware loads wired to the ESP32.
+   - **MOCK / SYNTHETIC:** The Ceiling Fan (Switch S001), Refrigerator (Switch S002), and Solar Battery Storage are mock simulation models illustrating the modular switch architecture from future scope (idea.txt).
+   - If asked which appliances are real physical hardware, explicitly state: "The DC LED and 5V Water Pump Motor are the ONLY real physical loads connected to the ESP32 bench. All other appliances are simulated mock models."
 
 ### 📦 VERIFIED STRUCTURED TELEMETRY & EVENT LOG:
 \`\`\`json

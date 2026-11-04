@@ -48,7 +48,8 @@ const motorStatusBadge = document.getElementById('motorStatusBadge');
 const motorStateClassified = document.getElementById('motorStateClassified');
 
 // Containers
-const appliancesContainer = document.getElementById('appliancesContainer');
+const realAppliancesContainer = document.getElementById('realAppliancesContainer');
+const mockAppliancesContainer = document.getElementById('mockAppliancesContainer');
 const eventsTableBody = document.getElementById('eventsTableBody');
 const anomalyCountBadge = document.getElementById('anomalyCountBadge');
 const applianceCountBadge = document.getElementById('applianceCountBadge');
@@ -196,86 +197,121 @@ function updateUI(t) {
 }
 
 // ========================================================
-// 4. SMART APPLIANCES FETCHER (idea.txt)
+// 4. SMART APPLIANCES FETCHER (Split Real vs Mock)
 // ========================================================
 async function fetchAppliances() {
   try {
     const res = await fetch('/api/appliances');
     if (!res.ok) return;
     const json = await res.json();
-    if (json.success && Array.isArray(json.appliances)) {
-      renderAppliances(json.appliances);
-      applianceCountBadge.textContent = json.appliances.length;
+    if (json.success) {
+      if (realAppliancesContainer && Array.isArray(json.physical)) {
+        renderApplianceList(realAppliancesContainer, json.physical, true);
+      }
+      if (mockAppliancesContainer && Array.isArray(json.mock)) {
+        renderApplianceList(mockAppliancesContainer, json.mock, false);
+      }
+      if (applianceCountBadge && Array.isArray(json.appliances)) {
+        applianceCountBadge.textContent = json.appliances.length;
+      }
     }
   } catch (err) {
     console.warn('Appliance fetch error:', err);
   }
 }
 
-function renderAppliances(apps) {
-  appliancesContainer.innerHTML = apps.map(app => `
-    <div class="appliance-card">
-      <div class="app-card-head">
-        <div class="app-meta">
-          <div class="app-icon-wrap">${app.icon}</div>
-          <div>
-            <div class="app-name">${app.name}</div>
-            <div class="app-switch-id">${app.switch_id} &bull; ${app.category}</div>
+function renderApplianceList(container, apps, isPhysical) {
+  if (!apps || apps.length === 0) {
+    container.innerHTML = `<div class="loading-state">No devices found in this category.</div>`;
+    return;
+  }
+
+  container.innerHTML = apps.map(app => {
+    const isReal = app.is_physical ?? isPhysical;
+    const badgeHtml = isReal
+      ? `<span class="badge-source-real">🟢 REAL HARDWARE</span>`
+      : `<span class="badge-source-mock">🧪 MOCK MODEL</span>`;
+    const borderClass = isReal ? 'card-real-border' : 'card-mock-border';
+
+    return `
+      <div class="appliance-card ${borderClass}">
+        <div class="app-card-head">
+          <div class="app-meta">
+            <div class="app-icon-wrap">${app.icon}</div>
+            <div>
+              <div class="app-name">${app.name}</div>
+              <div class="app-switch-id">${app.switch_id} &bull; ${app.category}</div>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+            ${badgeHtml}
+            <span class="device-status-badge ${app.status.includes('RUN') || app.status === 'ON' || app.status === 'DISCHARGING' ? 'status-on' : 'status-off'}">
+              ${app.status}
+            </span>
           </div>
         </div>
-        <span class="device-status-badge ${app.status.includes('RUN') || app.status === 'ON' || app.status === 'DISCHARGING' ? 'status-on' : 'status-off'}">
-          ${app.status}
-        </span>
-      </div>
 
-      <div class="app-power-banner">
-        <span>Instant Power</span>
-        <span class="val">${app.power.toFixed(2)} W</span>
-      </div>
+        <div class="app-pin-banner">
+          ${isReal ? '⚡ Pin Connection: ' : '🔬 Simulation Architecture: '}<strong>${app.pin_info || 'GPIO Telemetry'}</strong>
+        </div>
 
-      <div class="app-stats-row">
-        <div class="app-stat-item">
-          <span>VOLTAGE</span>
-          <strong>${app.voltage.toFixed(1)} V</strong>
+        <div class="app-power-banner">
+          <span>Instant Power</span>
+          <span class="val">${app.power.toFixed(2)} W</span>
         </div>
-        <div class="app-stat-item">
-          <span>CURRENT</span>
-          <strong>${app.current.toFixed(3)} A</strong>
-        </div>
-        <div class="app-stat-item">
-          <span>ENERGY</span>
-          <strong>${app.cumulative_kwh.toFixed(3)} kWh</strong>
-        </div>
-        <div class="app-stat-item inr-sub-box">
-          <span>COST (@ ₹8)</span>
-          <strong style="color: var(--warning);">₹${app.cost_inr.toFixed(2)}</strong>
-        </div>
-      </div>
 
-      <div class="app-health-bar">
-        <span>Health:</span>
-        <div class="health-track">
-          <div class="health-fill" style="width: ${app.health_score}%; background: ${app.health_score > 90 ? 'var(--success)' : (app.health_score > 80 ? 'var(--warning)' : 'var(--danger)')};"></div>
+        <div class="app-stats-row">
+          <div class="app-stat-item">
+            <span>VOLTAGE</span>
+            <strong>${app.voltage.toFixed(2)} V</strong>
+          </div>
+          <div class="app-stat-item">
+            <span>CURRENT</span>
+            <strong>${app.current.toFixed(3)} A</strong>
+          </div>
+          <div class="app-stat-item">
+            <span>ENERGY</span>
+            <strong>${app.cumulative_kwh.toFixed(4)} kWh</strong>
+          </div>
+          <div class="app-stat-item inr-sub-box">
+            <span>COST (@ ₹8)</span>
+            <strong style="color: var(--warning);">₹${app.cost_inr.toFixed(2)}</strong>
+          </div>
         </div>
-        <strong>${app.health_score}%</strong>
+
+        <div class="app-health-bar">
+          <span>Health:</span>
+          <div class="health-track">
+            <div class="health-fill" style="width: ${app.health_score}%; background: ${app.health_score > 90 ? 'var(--success)' : (app.health_score > 80 ? 'var(--warning)' : 'var(--danger)')};"></div>
+          </div>
+          <strong>${app.health_score}%</strong>
+        </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 // ========================================================
-// 5. ML ANOMALY EVENT LOG (idea.txt)
+// 5. ML ANOMALY EVENT LOG (with Real vs Mock Separation)
 // ========================================================
-async function fetchEvents(severity) {
+async function fetchEvents(filter = currentFilter) {
   try {
-    const query = severity && severity !== 'all' ? `?severity=${severity}` : '';
+    let query = '';
+    if (filter === 'real') {
+      query = '?source_type=real';
+    } else if (filter === 'mock') {
+      query = '?source_type=mock';
+    } else if (filter && filter !== 'all') {
+      query = `?severity=${filter}`;
+    }
+
     const res = await fetch(`/api/events${query}`);
     if (!res.ok) return;
     const json = await res.json();
     if (json.success && Array.isArray(json.events)) {
       renderEvents(json.events);
       const critCount = json.events.filter(e => e.severity === 'critical' || e.severity === 'medium').length;
-      anomalyCountBadge.textContent = critCount;
+      if (anomalyCountBadge) anomalyCountBadge.textContent = critCount;
     }
   } catch (err) {
     console.warn('Events fetch error:', err);
@@ -285,29 +321,34 @@ async function fetchEvents(severity) {
 function filterEvents(sev) {
   currentFilter = sev;
   document.querySelectorAll('.f-pill').forEach(btn => {
-    btn.classList.toggle('active', btn.getAttribute('onclick').includes(sev));
+    btn.classList.toggle('active', btn.getAttribute('onclick').includes(`'${sev}'`));
   });
   fetchEvents(sev);
 }
 
 function renderEvents(events) {
-  if (events.length === 0) {
-    eventsTableBody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;">No events recorded in this category.</td></tr>`;
+  if (!events || events.length === 0) {
+    eventsTableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 24px;">No events recorded matching this filter category.</td></tr>`;
     return;
   }
 
   eventsTableBody.innerHTML = events.map(e => {
     const sevClass = e.severity === 'critical' ? 'sev-critical' : (e.severity === 'medium' ? 'sev-medium' : 'sev-normal');
     const timeStr = new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const confPct = Math.round(e.model_confidence * 100);
+    const confPct = Math.round((e.model_confidence || 0.95) * 100);
+    const isReal = e.is_physical === true || e.source === 'REAL_ESP32_BENCH';
+    const sourceBadge = isReal
+      ? `<span class="tag-source-real">🟢 REAL BENCH</span>`
+      : `<span class="tag-source-mock">🧪 MOCK MODEL</span>`;
 
     return `
       <tr>
         <td><strong style="font-family: var(--font-mono); color: var(--primary);">${e.event_id}</strong></td>
         <td style="color: var(--text-muted); font-size: 0.78rem;">${timeStr}</td>
+        <td>${sourceBadge}</td>
         <td><strong>${e.appliance}</strong> <small style="color: var(--text-muted);">(${e.switch_id})</small></td>
         <td><code style="font-size: 0.76rem; color: var(--text-primary);">${e.event_type}</code></td>
-        <td style="font-family: var(--font-mono); font-size: 0.78rem;">${e.voltage}V &bull; ${e.current}A &bull; <strong>${e.power.toFixed(1)}W</strong></td>
+        <td style="font-family: var(--font-mono); font-size: 0.78rem;">${Number(e.voltage).toFixed(2)}V &bull; ${Number(e.current).toFixed(3)}A &bull; <strong>${Number(e.power).toFixed(1)}W</strong></td>
         <td><span class="tag-severity ${sevClass}">${e.severity}</span></td>
         <td>
           <div class="confidence-bar">

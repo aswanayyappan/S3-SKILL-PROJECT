@@ -161,23 +161,37 @@
             <span class="flow-label">Monitored Loads</span>
           </div>
 
-          <!-- Flow Stage 3: Monitored Appliances -->
-          <div class="flow-loads-group">
-            <div class="load-pill-item">
-              <span class="lp-icon">💡</span>
-              <span class="lp-name">DC LED:</span>
-              <strong id="flowLedPower">0.00 W</strong>
+          <!-- Flow Stage 3: Monitored Appliances (Split into Real Hardware vs Mock) -->
+          <div class="flow-loads-dual">
+            <!-- Real Hardware Bench Loads -->
+            <div class="flow-loads-group real-group">
+              <div class="flow-group-title"><span class="badge-mini-real">REAL BENCH</span> ESP32 ADC Live</div>
+              <div class="load-pill-item item-real">
+                <span class="lp-icon">💡</span>
+                <span class="lp-name">DC LED:</span>
+                <strong id="flowLedPower">0.00 W</strong>
+              </div>
+              <div class="load-pill-item item-real">
+                <span class="lp-icon">💧</span>
+                <span class="lp-name">5V Pump:</span>
+                <strong id="flowMotorPower">0.00 W</strong>
+                <span class="status-micro" id="flowMotorState">OFF</span>
+              </div>
             </div>
-            <div class="load-pill-item">
-              <span class="lp-icon">💧</span>
-              <span class="lp-name">5V Pump:</span>
-              <strong id="flowMotorPower">0.00 W</strong>
-              <span class="status-micro" id="flowMotorState">OFF</span>
-            </div>
-            <div class="load-pill-item">
-              <span class="lp-icon">🌀</span>
-              <span class="lp-name">Fan (S001):</span>
-              <strong>96.6 W</strong>
+
+            <!-- Mock Simulated Appliances (idea.txt) -->
+            <div class="flow-loads-group mock-group">
+              <div class="flow-group-title"><span class="badge-mini-mock">MOCK</span> Simulated Switches</div>
+              <div class="load-pill-item item-mock">
+                <span class="lp-icon">🌀</span>
+                <span class="lp-name">Fan (S001):</span>
+                <strong>96.6 W</strong>
+              </div>
+              <div class="load-pill-item item-mock">
+                <span class="lp-icon">❄️</span>
+                <span class="lp-name">Fridge (S002):</span>
+                <strong>27.6 W</strong>
+              </div>
             </div>
           </div>
         </div>
@@ -365,17 +379,38 @@
       <div class="view-intro-banner">
         <div>
           <h2>Multi-Appliance Smart Electrical Architecture</h2>
-          <p>Individual switch monitoring, real-time load telemetry, and predictive health assessment</p>
+          <p>Individual switch monitoring, physical bench telemetry, and predictive health assessment</p>
         </div>
         <div class="banner-stat">
-          <span>Active Monitored Loads:</span>
-          <strong>5 Nodes</strong>
+          <span>Active Nodes:</span>
+          <strong>2 Real Bench + 3 Mock</strong>
         </div>
       </div>
 
-      <div class="appliances-grid" id="appliancesContainer">
+      <!-- CATEGORY 1: REAL PHYSICAL BENCH -->
+      <div class="section-category-header">
+        <div class="category-heading">
+          <span class="badge-source-real">🟢 REAL PHYSICAL HARDWARE</span>
+          <h3>Physical Bench ESP32 Loads</h3>
+        </div>
+        <span class="category-desc">Directly wired to ACS712 current sensors &amp; voltage dividers on ESP32 ADC1</span>
+      </div>
+      <div class="appliances-grid" id="realAppliancesContainer">
         <!-- Rendered dynamically by app.js -->
-        <div class="loading-state">Loading smart appliances data...</div>
+        <div class="loading-state">Loading real physical bench loads...</div>
+      </div>
+
+      <!-- CATEGORY 2: MOCK / SIMULATED CATEGORY -->
+      <div class="section-category-header" style="margin-top: 24px;">
+        <div class="category-heading">
+          <span class="badge-source-mock">🧪 MOCK / SIMULATED CATEGORY</span>
+          <h3>Modular Smart Switch Models (idea.txt)</h3>
+        </div>
+        <span class="category-desc">Synthesized load models demonstrating multi-node electrical event detection</span>
+      </div>
+      <div class="appliances-grid" id="mockAppliancesContainer">
+        <!-- Rendered dynamically by app.js -->
+        <div class="loading-state">Loading simulated appliance models...</div>
       </div>
     </main>
 
@@ -390,6 +425,8 @@
         </div>
         <div class="filter-pills">
           <button class="f-pill active" onclick="filterEvents('all')">All Events</button>
+          <button class="f-pill f-pill-real" onclick="filterEvents('real')">🟢 Real Bench Only</button>
+          <button class="f-pill f-pill-mock" onclick="filterEvents('mock')">🧪 Mock / Simulated Only</button>
           <button class="f-pill f-critical" onclick="filterEvents('critical')">Critical Only</button>
           <button class="f-pill f-medium" onclick="filterEvents('medium')">Medium / Surges</button>
           <button class="f-pill f-normal" onclick="filterEvents('normal')">Normal Operations</button>
@@ -403,6 +440,7 @@
               <tr>
                 <th>Event ID</th>
                 <th>Timestamp</th>
+                <th>Source Category</th>
                 <th>Switch &bull; Appliance</th>
                 <th>Event Type</th>
                 <th>Telemetry (V / I / P)</th>
