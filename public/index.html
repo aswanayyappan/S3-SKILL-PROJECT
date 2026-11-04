@@ -112,44 +112,60 @@
             <span class="flow-icon">☀️</span>
             <div>
               <h3>Solar Energy &amp; Electrical Load Architecture</h3>
-              <p>Solar energy rail strictly supplies monitored loads (DC LED &amp; DC Motor) &bull; ESP32 is powered via independent external rail</p>
+              <p>6V Solar Panel &bull; TP4056 Charger &bull; 3.7V Li-ion Battery &bull; DC-DC 5V Booster &bull; Monitored 5V Loads (LED &amp; DC Motor) &bull; ESP32 Cloud</p>
             </div>
           </div>
           <div class="flow-legend">
-            <span class="badge-mini-real" style="background: rgba(245, 158, 11, 0.15); color: #d97706; font-weight: 700;">☀️ Solar ➔ DC LED &amp; DC Motor</span>
-            <span class="badge-mini-bias" style="background: rgba(59, 130, 246, 0.15); color: #2563eb; font-weight: 700;">🔌 ESP32: External 5V Supply</span>
+            <span class="badge-mini-real" style="background: rgba(245, 158, 11, 0.15); color: #d97706; font-weight: 700;">☀️ 6V Solar ➔ TP4056 ➔ 3.7V Battery</span>
+            <span class="badge-mini-bias" style="background: rgba(16, 185, 129, 0.15); color: #059669; font-weight: 700;">⚡ DC-DC 5V Booster Rail</span>
           </div>
         </div>
 
         <div class="power-flow-container">
-          <!-- Flow Stage 1: Solar & Battery -->
-          <div class="flow-node node-solar" style="border-left: 4px solid #f59e0b;">
-            <div class="node-icon">☀️🔋</div>
+          <!-- Flow Stage 1: 6V Solar Panel & TP4056 -->
+          <div class="flow-node node-solar" style="border-left: 4px solid #f59e0b; min-width: 200px;">
+            <div class="node-icon">☀️</div>
             <div class="node-content">
-              <strong>Solar PV &amp; Battery Bank</strong>
-              <span class="node-detail">12V Clean Energy Generation Rail</span>
-              <div class="node-badge" id="flowSolarStatus">SOLAR GENERATION ACTIVE</div>
+              <strong>6V Solar Panel</strong>
+              <span class="node-detail">6V / 5–10W PV Generation</span>
+              <div class="node-badge" id="flowSolarStatus">SOLAR ACTIVE (6V)</div>
             </div>
           </div>
 
-          <!-- Flow Arrow: Solar to Monitored Loads -->
+          <!-- Flow Arrow -->
           <div class="flow-connector">
             <div class="flow-line"><div class="flow-particle" style="background: #f59e0b;"></div></div>
-            <span class="flow-label" style="color: #d97706; font-weight: 700;">Solar Rail ➔</span>
+            <span class="flow-label" style="color: #d97706; font-weight: 700;">TP4056 ➔</span>
           </div>
 
-          <!-- Flow Stage 2: Direct Solar-Powered Loads (DC LED & DC Motor) -->
-          <div class="flow-loads-group real-group" style="border-left: 3px solid #f59e0b; min-width: 290px;">
+          <!-- Flow Stage 2: 3.7V Li-ion Battery & 5V Booster -->
+          <div class="flow-node" style="border-left: 4px solid #10b981; background: var(--bg-card); min-width: 220px;">
+            <div class="node-icon">🔋⚡</div>
+            <div class="node-content">
+              <strong>3.7V Li-ion &amp; 5V Booster</strong>
+              <span class="node-detail">18650 Cell &bull; 3.7V &rarr; 5V DC-DC Step-Up</span>
+              <div class="node-badge badge-green" style="font-size: 0.68rem; font-weight: 800; margin-top: 4px;">5V DC OUTPUT RAIL</div>
+            </div>
+          </div>
+
+          <!-- Flow Arrow -->
+          <div class="flow-connector">
+            <div class="flow-line"><div class="flow-particle" style="background: #10b981;"></div></div>
+            <span class="flow-label" style="color: #059669; font-weight: 700;">5V DC Rail ➔</span>
+          </div>
+
+          <!-- Flow Stage 3: Direct Solar-Powered Loads (DC LED & DC Motor) -->
+          <div class="flow-loads-group real-group" style="border-left: 3px solid #10b981; min-width: 270px;">
             <div class="flow-group-title">
-              <span style="color: #d97706;">DIRECT SOLAR-POWERED BENCH LOADS</span>
-              <span class="badge-mini-real" style="background: rgba(245, 158, 11, 0.15); color: #d97706; border-color: rgba(245, 158, 11, 0.4);">Solar Rail</span>
+              <span style="color: #059669;">5V MONITORED LOADS</span>
+              <span class="badge-mini-real" style="background: rgba(16, 185, 129, 0.15); color: #059669; border-color: rgba(16, 185, 129, 0.4);">5V Booster Rail</span>
             </div>
             <!-- Load 1: DC LED Fixture -->
             <div class="load-pill-item item-real" style="border-left: 3px solid #0284c7;">
               <span class="lp-icon">💡</span>
               <div>
-                <span class="lp-name">DC LED Fixture:</span>
-                <span style="display: block; font-size: 0.68rem; color: #0284c7; font-weight: 600;">Load 1 &bull; Direct Solar Rail</span>
+                <span class="lp-name">LED Load (5V):</span>
+                <span style="display: block; font-size: 0.68rem; color: #0284c7; font-weight: 600;">GPIO 32 (V) &bull; GPIO 34 (I)</span>
               </div>
               <strong id="flowLedPower" style="color: #0284c7;">0.00 W</strong>
               <span class="status-micro" id="flowLedState">OFF</span>
@@ -158,8 +174,8 @@
             <div class="load-pill-item item-real" style="border-left: 3px solid #10b981;">
               <span class="lp-icon">⚙️</span>
               <div>
-                <span class="lp-name">DC Motor:</span>
-                <span style="display: block; font-size: 0.68rem; color: #10b981; font-weight: 600;">Load 2 &bull; Direct Solar Rail</span>
+                <span class="lp-name">DC Motor (5V):</span>
+                <span style="display: block; font-size: 0.68rem; color: #10b981; font-weight: 600;">GPIO 33 (V) &bull; GPIO 35 (I)</span>
               </div>
               <strong id="flowMotorPower" style="color: #10b981;">0.00 W</strong>
               <span class="status-micro" id="flowMotorState">OFF</span>
@@ -167,19 +183,19 @@
           </div>
 
           <!-- Flow Arrow: Sensing Separation -->
-          <div class="flow-connector" style="min-width: 40px; opacity: 0.6;">
+          <div class="flow-connector" style="min-width: 36px; opacity: 0.6;">
             <div style="width: 2px; height: 42px; background: var(--border-light); margin: 0 auto;"></div>
-            <span class="flow-label" style="font-size: 0.62rem; color: #3b82f6; font-weight: 600;">ADC Sense</span>
+            <span class="flow-label" style="font-size: 0.62rem; color: #3b82f6; font-weight: 600;">Wi-Fi</span>
           </div>
 
-          <!-- Flow Stage 3: ESP32 MCU Sensing Unit (External 5V Independent Rail) -->
-          <div class="flow-node" style="border-left: 4px solid #3b82f6; background: var(--bg-card); min-width: 230px;">
-            <div class="node-icon">🔌</div>
+          <!-- Flow Stage 4: ESP32 MCU Sensing Unit -->
+          <div class="flow-node" style="border-left: 4px solid #3b82f6; background: var(--bg-card); min-width: 210px;">
+            <div class="node-icon">📡</div>
             <div class="node-content">
-              <strong>ESP32 MCU Controller</strong>
-              <span class="node-detail" style="color: #3b82f6; font-weight: 700;">External 5V Independent Supply</span>
+              <strong>ESP32 DevKit V1</strong>
+              <span class="node-detail" style="color: #3b82f6; font-weight: 700;">Dual ACS712 &bull; Cloud Sync</span>
               <div style="margin-top: 4px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-                <span class="badge-tag tag-blue" style="font-size: 0.65rem;">Isolated from Solar Drain</span>
+                <span class="badge-tag tag-blue" style="font-size: 0.65rem;">P = V &times; I</span>
                 <span class="badge-mini-bias" id="biasFlowBadge">Zero-Bias: Active</span>
               </div>
             </div>
@@ -274,7 +290,7 @@
               </div>
             </div>
             <div class="device-foot-stats">
-              <span>Energy Source: <strong style="color: #0284c7;">Direct Solar Rail</strong></span>
+              <span>Energy Source: <strong style="color: #0284c7;">5V Booster Rail (3.7V Battery / 6V Solar)</strong></span>
               <span>Sense Pins: <strong>GPIO 32 (V) / GPIO 34 (I)</strong></span>
               <span>Avg Current: <strong id="ledAvgCurrent">0.00A</strong></span>
             </div>
@@ -315,7 +331,7 @@
               </div>
             </div>
             <div class="device-foot-stats">
-              <span>Energy Source: <strong style="color: #10b981;">Direct Solar Rail</strong></span>
+              <span>Energy Source: <strong style="color: #10b981;">5V Booster Rail (3.7V Battery / 6V Solar)</strong></span>
               <span>Sense Pins: <strong>GPIO 33 (V) / GPIO 35 (I)</strong></span>
               <span>Motor State: <strong id="motorStateClassified">OFF (&lt;0.05A)</strong></span>
             </div>
