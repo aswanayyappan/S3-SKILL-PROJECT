@@ -3,9 +3,9 @@
   "model_name": "S3ElectricalTransformer",
   "framework": "PyTorch 2.15.0+cpu",
   "dataset_samples": 234,
-  "learning_cycle": 17,
+  "learning_cycle": 19,
   "epochs": 8,
-  "training_time_seconds": 6.63,
+  "training_time_seconds": 6.83,
   "final_val_accuracy": 97.22,
   "classes": [
     "BENCH_IDLE_OFF",
@@ -15,5 +15,5 @@
     "PUMP_STALL_OVERLOAD",
     "SENSOR_BIAS_ANOMALY"
   ],
-  "last_learned_at": "2026-11-04T18:41:34Z"
+  "last_learned_at": "2026-11-04T18:51:35Z"
 }

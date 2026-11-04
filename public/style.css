@@ -1764,10 +1764,14 @@ body.light-theme {
   display: flex;
   flex-direction: column;
   height: 520px;
+  max-height: 520px;
+  min-height: 520px;
+  overflow: hidden;
   padding: 16px;
 }
 
 .chat-card-header {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1794,6 +1798,7 @@ body.light-theme {
 }
 
 .chat-chips-scroll {
+  flex-shrink: 0;
   display: flex;
   gap: 6px;
   overflow-x: auto;
@@ -1802,14 +1807,18 @@ body.light-theme {
 }
 
 .chat-messages, .fs-chat-messages {
-  flex: 1;
+  flex: 1 1 0%;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding-right: 6px;
+  padding-right: 8px;
   font-size: 0.84rem;
   line-height: 1.5;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
 }
 
 .chat-msg {
@@ -1851,9 +1860,11 @@ body.light-theme {
 .chat-input-row, .fs-chat-input-row {
   display: flex;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: auto;
   border-top: 1px solid var(--border);
   padding-top: 12px;
+  flex-shrink: 0;
+  background: var(--bg-card);
 }
 
 .chat-input-row input, .fs-chat-input-row input {
@@ -1877,14 +1888,21 @@ body.light-theme {
   display: grid;
   grid-template-columns: 320px 1fr;
   gap: 16px;
-  height: calc(100vh - 160px);
-  min-height: 550px;
+  height: calc(100vh - 180px);
+  max-height: calc(100vh - 180px);
+  min-height: 520px;
+  overflow: hidden;
 }
 
 .chat-left-info {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .chat-left-info h3 {
@@ -1952,6 +1970,14 @@ body.light-theme {
   display: flex;
   flex-direction: column;
   height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.chat-right-panel .chat-card-header {
+  flex-shrink: 0;
 }
 
 /* ========================================================
@@ -1970,6 +1996,15 @@ body.light-theme {
   .chat-fullscreen-layout {
     grid-template-columns: 1fr;
     height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+  .chat-left-info {
+    max-height: 480px;
+  }
+  .chat-right-panel {
+    height: 580px;
+    max-height: 580px;
   }
 }
 

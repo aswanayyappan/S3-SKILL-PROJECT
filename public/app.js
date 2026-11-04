@@ -129,6 +129,16 @@ function switchView(targetViewId) {
     loadBiasConfig();
     fetchContinuousLearningStatus();
   }
+  if (targetViewId === 'chat') {
+    requestAnimationFrame(() => {
+      if (fsChatMessages) fsChatMessages.scrollTo({ top: fsChatMessages.scrollHeight, behavior: 'smooth' });
+    });
+  }
+  if (targetViewId === 'overview') {
+    requestAnimationFrame(() => {
+      if (chatMessages) chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+    });
+  }
 }
 
 viewTabs.forEach(tab => {
@@ -152,6 +162,7 @@ async function fetchTelemetry() {
 }
 
 function updateUI(t) {
+  if (!t) return;
   const led = t.led || {};
   const motor = t.dcMotor || t.waterPump || {};
   const overview = t.systemOverview || {};
@@ -162,9 +173,9 @@ function updateUI(t) {
   const totalCost = overview.energyChargeINR ?? 0;
 
   // 1. Nav Quick Stats
-  navKpiLoad.textContent = `${totalWatts.toFixed(3)} W`;
-  navKpiUnits.textContent = `${totalUnits.toFixed(4)} kWh`;
-  navKpiCost.textContent = `₹${totalCost.toFixed(2)}`;
+  if (navKpiLoad) navKpiLoad.textContent = `${totalWatts.toFixed(3)} W`;
+  if (navKpiUnits) navKpiUnits.textContent = `${totalUnits.toFixed(4)} kWh`;
+  if (navKpiCost) navKpiCost.textContent = `₹${totalCost.toFixed(2)}`;
 
   // 2. Executive KPI Cards
   if (kpiSolarLedPower) kpiSolarLedPower.textContent = (led.instantPowerWatts || 0).toFixed(2);
@@ -178,10 +189,10 @@ function updateUI(t) {
     if (kpiMonthlyUnits) kpiMonthlyUnits.textContent = `${proj.historicalAverage.monthlyUnits.toFixed(1)} Units`;
   }
 
-  // 3. Power Flow SVG Card
-  flowTotalPower.textContent = `${totalWatts.toFixed(2)} W Total`;
-  flowLedPower.textContent = `${(led.instantPowerWatts || 0).toFixed(2)} W`;
-  flowMotorPower.textContent = `${(motor.instantPowerWatts || 0).toFixed(2)} W`;
+  // 3. Power Flow Topology Card
+  if (flowTotalPower) flowTotalPower.textContent = `${totalWatts.toFixed(2)} W Total`;
+  if (flowLedPower) flowLedPower.textContent = `${(led.instantPowerWatts || 0).toFixed(2)} W`;
+  if (flowMotorPower) flowMotorPower.textContent = `${(motor.instantPowerWatts || 0).toFixed(2)} W`;
   
   if (flowMotorState) {
     flowMotorState.textContent = motor.status || 'OFF';
@@ -205,29 +216,33 @@ function updateUI(t) {
   }
 
   // 4. Load 1: DC LED Card
-  ledPowerVal.textContent = (led.instantPowerWatts || 0).toFixed(3);
-  ledVoltageVal.innerHTML = `${(led.voltage || 0).toFixed(2)} <small>V</small>`;
-  ledCurrentVal.innerHTML = `${(led.current || 0).toFixed(3)} <small>A</small>`;
-  ledEnergyVal.innerHTML = `${(led.cumulativeKwh || 0).toFixed(4)} <small>kWh</small>`;
-  ledCostVal.textContent = `₹${(led.energyChargeINR || 0).toFixed(2)}`;
-  ledStatusBadge.textContent = led.status || 'OFF';
-  ledStatusBadge.className = `device-status-badge ${led.status === 'ON' ? 'status-on' : 'status-off'}`;
-  ledAvgCurrent.textContent = `${(led.stats?.average || 0).toFixed(3)}A`;
+  if (ledPowerVal) ledPowerVal.textContent = (led.instantPowerWatts || 0).toFixed(3);
+  if (ledVoltageVal) ledVoltageVal.innerHTML = `${(led.voltage || 0).toFixed(2)} <small>V</small>`;
+  if (ledCurrentVal) ledCurrentVal.innerHTML = `${(led.current || 0).toFixed(3)} <small>A</small>`;
+  if (ledEnergyVal) ledEnergyVal.innerHTML = `${(led.cumulativeKwh || 0).toFixed(4)} <small>kWh</small>`;
+  if (ledCostVal) ledCostVal.textContent = `₹${(led.energyChargeINR || 0).toFixed(2)}`;
+  if (ledStatusBadge) {
+    ledStatusBadge.textContent = led.status || 'OFF';
+    ledStatusBadge.className = `device-status-badge ${led.status === 'ON' ? 'status-on' : 'status-off'}`;
+  }
+  if (ledAvgCurrent) ledAvgCurrent.textContent = `${(led.stats?.average || 0).toFixed(3)}A`;
 
   // 5. Load 2: DC Motor Card
-  motorPowerVal.textContent = (motor.instantPowerWatts || 0).toFixed(3);
-  motorVoltageVal.innerHTML = `${(motor.voltage || 0).toFixed(2)} <small>V</small>`;
-  motorCurrentVal.innerHTML = `${(motor.current || 0).toFixed(3)} <small>A</small>`;
-  motorEnergyVal.innerHTML = `${(motor.cumulativeKwh || 0).toFixed(4)} <small>kWh</small>`;
-  motorCostVal.textContent = `₹${(motor.energyChargeINR || 0).toFixed(2)}`;
+  if (motorPowerVal) motorPowerVal.textContent = (motor.instantPowerWatts || 0).toFixed(3);
+  if (motorVoltageVal) motorVoltageVal.innerHTML = `${(motor.voltage || 0).toFixed(2)} <small>V</small>`;
+  if (motorCurrentVal) motorCurrentVal.innerHTML = `${(motor.current || 0).toFixed(3)} <small>A</small>`;
+  if (motorEnergyVal) motorEnergyVal.innerHTML = `${(motor.cumulativeKwh || 0).toFixed(4)} <small>kWh</small>`;
+  if (motorCostVal) motorCostVal.textContent = `₹${(motor.energyChargeINR || 0).toFixed(2)}`;
   
-  motorStatusBadge.textContent = motor.status || 'OFF';
-  let badgeClass = 'status-off';
-  if (motor.status === 'NORMAL RUNNING') badgeClass = 'status-on';
-  else if (motor.status === 'STARTUP / HIGH LOAD') badgeClass = 'status-warn';
-  else if (motor.status === 'STALL / OVERLOAD') badgeClass = 'status-danger';
-  motorStatusBadge.className = `device-status-badge ${badgeClass}`;
-  motorStateClassified.textContent = motor.status || 'OFF';
+  if (motorStatusBadge) {
+    motorStatusBadge.textContent = motor.status || 'OFF';
+    let badgeClass = 'status-off';
+    if (motor.status === 'NORMAL RUNNING') badgeClass = 'status-on';
+    else if (motor.status === 'STARTUP / HIGH LOAD') badgeClass = 'status-warn';
+    else if (motor.status === 'STALL / OVERLOAD') badgeClass = 'status-danger';
+    motorStatusBadge.className = `device-status-badge ${badgeClass}`;
+  }
+  if (motorStateClassified) motorStateClassified.textContent = motor.status || 'OFF';
 
   // 6. Fullscreen Chat Grounding
   if (fsChatLed) fsChatLed.textContent = `${(led.instantPowerWatts || 0).toFixed(2)} W (${(led.current || 0).toFixed(3)}A)`;
@@ -349,6 +364,7 @@ function filterEvents(sev) {
 }
 
 function renderEvents(events) {
+  if (!eventsTableBody) return;
   if (!events || events.length === 0) {
     eventsTableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 24px;">No events recorded matching this filter category.</td></tr>`;
     return;
@@ -724,6 +740,8 @@ window.sendQuickPrompt = function(text) {
   if (cInput) cInput.value = text;
   if (fsInput) fsInput.value = text;
   sendPrompt(text);
+  if (cInput) cInput.value = '';
+  if (fsInput) fsInput.value = '';
 };
 
 async function sendPrompt(text) {
@@ -734,6 +752,10 @@ async function sendPrompt(text) {
 
   // Show typing indicator
   const typingEl = appendChatMessage('assistant', '*Consulting electrical intelligence engine & telemetry logs...*');
+  typingEl.classList.add('chat-typing-indicator');
+  if (chatMessages && chatMessages.lastElementChild) {
+    chatMessages.lastElementChild.classList.add('chat-typing-indicator');
+  }
 
   try {
     const headers = { 'Content-Type': 'application/json' };
@@ -754,18 +776,24 @@ async function sendPrompt(text) {
     });
 
     const json = await res.json();
-    typingEl.remove();
+    document.querySelectorAll('.chat-typing-indicator').forEach(node => node.remove());
 
     if (json.reply) {
       appendChatMessage('assistant', json.reply, json.model, json.provider);
       chatHistory.push({ role: 'user', content: text });
       chatHistory.push({ role: 'assistant', content: json.reply });
-      if (json.telemetry) updateUI(json.telemetry);
+      if (json.telemetry) {
+        try {
+          updateUI(json.telemetry);
+        } catch (uiErr) {
+          console.warn('UI update error following chat telemetry sync:', uiErr);
+        }
+      }
     } else if (json.error) {
       appendChatMessage('assistant', `⚠️ **AI Service Error:** ${json.error}`);
     }
   } catch (err) {
-    typingEl.remove();
+    document.querySelectorAll('.chat-typing-indicator').forEach(node => node.remove());
     appendChatMessage('assistant', `⚠️ **Network Error:** Could not contact server: ${err.message}`);
   }
 }
@@ -792,14 +820,18 @@ function appendChatMessage(role, content, model = null, provider = null) {
   
   el.appendChild(bubble);
 
-  // Append to both mini chat and full-screen chat
+  // Append to both mini chat and full-screen chat with smooth auto-scroll to bottom
   if (chatMessages) {
     chatMessages.appendChild(el.cloneNode(true));
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    requestAnimationFrame(() => {
+      chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+    });
   }
   if (fsChatMessages) {
     fsChatMessages.appendChild(el);
-    fsChatMessages.scrollTop = fsChatMessages.scrollHeight;
+    requestAnimationFrame(() => {
+      fsChatMessages.scrollTo({ top: fsChatMessages.scrollHeight, behavior: 'smooth' });
+    });
   }
 
   return el;
@@ -812,7 +844,10 @@ if (chatForm) {
     const val = chatInput ? chatInput.value.trim() : '';
     if (val) {
       sendPrompt(val);
-      if (chatInput) chatInput.value = '';
+      if (chatInput) {
+        chatInput.value = '';
+        chatInput.focus();
+      }
     }
   });
 }
@@ -823,7 +858,10 @@ if (fsChatForm) {
     const val = fsChatInput ? fsChatInput.value.trim() : '';
     if (val) {
       sendPrompt(val);
-      if (fsChatInput) fsChatInput.value = '';
+      if (fsChatInput) {
+        fsChatInput.value = '';
+        fsChatInput.focus();
+      }
     }
   });
 }
