@@ -42,7 +42,7 @@ const ledCostVal = document.getElementById('ledCostVal');
 const ledStatusBadge = document.getElementById('ledStatusBadge');
 const ledAvgCurrent = document.getElementById('ledAvgCurrent');
 
-// Load 2 (Pump Motor) Elements
+// Load 2 (DC Motor) Elements
 const motorPowerVal = document.getElementById('motorPowerVal');
 const motorVoltageVal = document.getElementById('motorVoltageVal');
 const motorCurrentVal = document.getElementById('motorCurrentVal');
@@ -212,7 +212,7 @@ function updateUI(t) {
   ledStatusBadge.className = `device-status-badge ${led.status === 'ON' ? 'status-on' : 'status-off'}`;
   ledAvgCurrent.textContent = `${(led.stats?.average || 0).toFixed(3)}A`;
 
-  // 5. Load 2: DC Pump Motor Card
+  // 5. Load 2: DC Motor Card
   motorPowerVal.textContent = (motor.instantPowerWatts || 0).toFixed(3);
   motorVoltageVal.innerHTML = `${(motor.voltage || 0).toFixed(2)} <small>V</small>`;
   motorCurrentVal.innerHTML = `${(motor.current || 0).toFixed(3)} <small>A</small>`;
@@ -410,7 +410,7 @@ function updatePyTorchUI(res) {
 
   if (pyLiveState) {
     pyLiveState.textContent = p.state_name;
-    pyLiveState.className = `pl-status-tag ${p.state_name === 'PUMP_STALL_OVERLOAD' ? 'status-danger' : (p.state_name.includes('INRUSH') || p.state_name.includes('BIAS') ? 'status-warn' : 'status-on')}`;
+    pyLiveState.className = `pl-status-tag ${p.state_name.includes('STALL') ? 'status-danger' : (p.state_name.includes('INRUSH') || p.state_name.includes('BIAS') ? 'status-warn' : 'status-on')}`;
   }
   if (pyLiveConfidence) pyLiveConfidence.textContent = p.confidence_percent;
   if (pyLivePower) pyLivePower.textContent = `${p.predicted_power_watts.toFixed(2)} W`;
@@ -419,7 +419,7 @@ function updatePyTorchUI(res) {
     pyLiveRisk.style.color = p.anomaly_severity === 'critical' ? 'var(--danger)' : (p.anomaly_severity === 'medium' ? 'var(--warning)' : 'var(--success)');
   }
   if (pyLiveBiasExplanation && b) {
-    pyLiveBiasExplanation.innerHTML = `<strong>Sensor Zero-Bias:</strong> ${b.explanation} (LED: ${b.calibrated_led_voltage}V / ${b.calibrated_led_current}A &bull; Pump: ${b.calibrated_pump_voltage}V / ${b.calibrated_pump_current}A)`;
+    pyLiveBiasExplanation.innerHTML = `<strong>Sensor Zero-Bias:</strong> ${b.explanation} (LED: ${b.calibrated_led_voltage}V / ${b.calibrated_led_current}A &bull; Motor: ${b.calibrated_pump_voltage}V / ${b.calibrated_pump_current}A)`;
   }
 }
 

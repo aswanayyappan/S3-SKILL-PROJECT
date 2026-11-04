@@ -117,11 +117,11 @@
             <span class="flow-icon">☀️</span>
             <div>
               <h3>Solar Energy &amp; Electrical Load Architecture</h3>
-              <p>Solar energy rail strictly supplies the DC LED load &bull; ESP32 is powered via independent external rail</p>
+              <p>Solar energy rail strictly supplies monitored loads (DC LED &amp; DC Motor) &bull; ESP32 is powered via independent external rail</p>
             </div>
           </div>
           <div class="flow-legend">
-            <span class="badge-mini-real" style="background: rgba(245, 158, 11, 0.15); color: #d97706; font-weight: 700;">☀️ Solar ➔ DC LED Only</span>
+            <span class="badge-mini-real" style="background: rgba(245, 158, 11, 0.15); color: #d97706; font-weight: 700;">☀️ Solar ➔ DC LED &amp; DC Motor</span>
             <span class="badge-mini-bias" style="background: rgba(59, 130, 246, 0.15); color: #2563eb; font-weight: 700;">🔌 ESP32: External 5V Supply</span>
           </div>
         </div>
@@ -137,52 +137,56 @@
             </div>
           </div>
 
-          <!-- Flow Arrow: Solar to LED Load -->
+          <!-- Flow Arrow: Solar to Monitored Loads -->
           <div class="flow-connector">
             <div class="flow-line"><div class="flow-particle" style="background: #f59e0b;"></div></div>
             <span class="flow-label" style="color: #d97706; font-weight: 700;">Solar Rail ➔</span>
           </div>
 
-          <!-- Flow Stage 2: Direct Solar-Powered DC LED Load -->
-          <div class="flow-node" style="border: 2px solid #0284c7; background: var(--bg-card); min-width: 240px;">
-            <div class="node-icon">💡</div>
-            <div class="node-content" style="flex: 1;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <strong>DC LED Fixture</strong>
-                <span class="status-micro" id="flowLedState">OFF</span>
-              </div>
-              <span class="node-detail" style="color: #0284c7; font-weight: 700;">Direct Solar-Powered Load</span>
-              <div class="node-badge badge-green" id="flowLedPower" style="font-size: 0.82rem; font-weight: 800; margin-top: 4px;">0.00 W</div>
-            </div>
-          </div>
-
-          <!-- Flow Arrow: Auxiliary Separation -->
-          <div class="flow-connector" style="min-width: 40px; opacity: 0.5;">
-            <div style="width: 2px; height: 42px; background: var(--border-light); margin: 0 auto;"></div>
-          </div>
-
-          <!-- Flow Stage 3: Aux DC Pump Load & External ESP32 Sensing Unit -->
-          <div class="flow-loads-group real-group">
+          <!-- Flow Stage 2: Direct Solar-Powered Loads (DC LED & DC Motor) -->
+          <div class="flow-loads-group real-group" style="border-left: 3px solid #f59e0b; min-width: 290px;">
             <div class="flow-group-title">
-              <span>AUXILIARY BENCH LOADS &amp; SENSING</span>
-              <span class="badge-mini-bias" id="biasFlowBadge">Zero-Bias: Active</span>
+              <span style="color: #d97706;">DIRECT SOLAR-POWERED BENCH LOADS</span>
+              <span class="badge-mini-real" style="background: rgba(245, 158, 11, 0.15); color: #d97706; border-color: rgba(245, 158, 11, 0.4);">Solar Rail</span>
             </div>
-            <div class="load-pill-item item-real">
-              <span class="lp-icon">💧</span>
+            <!-- Load 1: DC LED Fixture -->
+            <div class="load-pill-item item-real" style="border-left: 3px solid #0284c7;">
+              <span class="lp-icon">💡</span>
               <div>
-                <span class="lp-name">5V Pump Motor:</span>
-                <span style="display: block; font-size: 0.68rem; color: var(--text-muted);">Bench Auxiliary DC Rail</span>
+                <span class="lp-name">DC LED Fixture:</span>
+                <span style="display: block; font-size: 0.68rem; color: #0284c7; font-weight: 600;">Load 1 &bull; Direct Solar Rail</span>
               </div>
-              <strong id="flowMotorPower">0.00 W</strong>
+              <strong id="flowLedPower" style="color: #0284c7;">0.00 W</strong>
+              <span class="status-micro" id="flowLedState">OFF</span>
+            </div>
+            <!-- Load 2: DC Motor -->
+            <div class="load-pill-item item-real" style="border-left: 3px solid #10b981;">
+              <span class="lp-icon">⚙️</span>
+              <div>
+                <span class="lp-name">DC Motor:</span>
+                <span style="display: block; font-size: 0.68rem; color: #10b981; font-weight: 600;">Load 2 &bull; Direct Solar Rail</span>
+              </div>
+              <strong id="flowMotorPower" style="color: #10b981;">0.00 W</strong>
               <span class="status-micro" id="flowMotorState">OFF</span>
             </div>
-            <div class="load-pill-item item-real" style="border-left: 3px solid #3b82f6;">
-              <span class="lp-icon">🔌</span>
-              <div>
-                <span class="lp-name">ESP32 MCU:</span>
-                <span style="display: block; font-size: 0.68rem; color: #3b82f6; font-weight: 700;">External 5V (Independent)</span>
+          </div>
+
+          <!-- Flow Arrow: Sensing Separation -->
+          <div class="flow-connector" style="min-width: 40px; opacity: 0.6;">
+            <div style="width: 2px; height: 42px; background: var(--border-light); margin: 0 auto;"></div>
+            <span class="flow-label" style="font-size: 0.62rem; color: #3b82f6; font-weight: 600;">ADC Sense</span>
+          </div>
+
+          <!-- Flow Stage 3: ESP32 MCU Sensing Unit (External 5V Independent Rail) -->
+          <div class="flow-node" style="border-left: 4px solid #3b82f6; background: var(--bg-card); min-width: 230px;">
+            <div class="node-icon">🔌</div>
+            <div class="node-content">
+              <strong>ESP32 MCU Controller</strong>
+              <span class="node-detail" style="color: #3b82f6; font-weight: 700;">External 5V Independent Supply</span>
+              <div style="margin-top: 4px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                <span class="badge-tag tag-blue" style="font-size: 0.65rem;">Isolated from Solar Drain</span>
+                <span class="badge-mini-bias" id="biasFlowBadge">Zero-Bias: Active</span>
               </div>
-              <span class="badge-tag tag-blue" style="font-size: 0.7rem;">Sensing Only</span>
             </div>
           </div>
         </div>
@@ -190,21 +194,21 @@
 
       <!-- Executive KPI Cards -->
       <section class="kpi-strip">
-        <div class="kpi-card" style="border-left: 4px solid #f59e0b;">
-          <div class="kpi-icon kpi-solar">☀️</div>
+        <div class="kpi-card" style="border-left: 4px solid #0284c7;">
+          <div class="kpi-icon kpi-solar" style="background: rgba(2, 132, 199, 0.15); color: #0284c7;">💡</div>
           <div class="kpi-details">
-            <span class="kpi-label">SOLAR LOAD (DC LED)</span>
+            <span class="kpi-label">SOLAR LOAD 1 (DC LED)</span>
             <div class="kpi-value"><span id="kpiSolarLedPower">0.00</span> <small>W</small></div>
-            <span class="kpi-sub" style="color: #d97706; font-weight: 600;">Direct Solar Rail</span>
+            <span class="kpi-sub" style="color: #0284c7; font-weight: 600;">Direct Solar Rail</span>
           </div>
         </div>
 
         <div class="kpi-card" style="border-left: 4px solid #10b981;">
-          <div class="kpi-icon kpi-green">💧</div>
+          <div class="kpi-icon kpi-green">⚙️</div>
           <div class="kpi-details">
-            <span class="kpi-label">AUX LOAD (5V PUMP)</span>
+            <span class="kpi-label">SOLAR LOAD 2 (DC MOTOR)</span>
             <div class="kpi-value"><span id="kpiMotorPower">0.00</span> <small>W</small></div>
-            <span class="kpi-sub">Bench Auxiliary Supply</span>
+            <span class="kpi-sub" style="color: #10b981; font-weight: 600;">Direct Solar Rail</span>
           </div>
         </div>
 
@@ -213,7 +217,7 @@
           <div class="kpi-details">
             <span class="kpi-label">TOTAL MONITORED LOAD</span>
             <div class="kpi-value"><span id="kpiTotalPower">0.0</span> <small>W</small></div>
-            <span class="kpi-sub" id="kpiPowerFormula">P = (V_led × I_led) + (V_pump × I_pump)</span>
+            <span class="kpi-sub" id="kpiPowerFormula">P = (V_led × I_led) + (V_motor × I_motor)</span>
           </div>
         </div>
 
@@ -281,14 +285,14 @@
             </div>
           </div>
 
-          <!-- Load 2: 5V DC Mini Pump Motor (Auxiliary Bench Load) -->
+          <!-- Load 2: DC Motor (Direct Solar-Powered Bench Load) -->
           <div class="card device-card pump-theme" style="border-top: 4px solid #10b981;">
             <div class="device-card-header">
               <div class="device-title">
                 <span class="device-dot dot-pump"></span>
                 <div>
-                  <h3 style="font-size: 1.05rem;">LOAD 2: 5V DC PUMP MOTOR</h3>
-                  <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">⚡ Aux Bench DC Supply &bull; Inductive Load</span>
+                  <h3 style="font-size: 1.05rem;">LOAD 2: DC MOTOR</h3>
+                  <span style="font-size: 0.72rem; color: #10b981; font-weight: 700;">☀️ Powered Directly by Solar Battery Rail &bull; Inductive Load</span>
                 </div>
               </div>
               <span class="device-status-badge status-off" id="motorStatusBadge">OFF</span>
@@ -316,7 +320,7 @@
               </div>
             </div>
             <div class="device-foot-stats">
-              <span>Energy Source: <strong>Bench DC Rail</strong></span>
+              <span>Energy Source: <strong style="color: #10b981;">Direct Solar Rail</strong></span>
               <span>Sense Pin: <strong>GPIO 33</strong> (ACS712 5A)</span>
               <span>Motor State: <strong id="motorStateClassified">OFF (&lt;0.05A)</strong></span>
             </div>
@@ -331,11 +335,11 @@
                 ⚡ Hardware Bench Telemetry Grounding &amp; Power Architecture
               </h4>
               <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.5;">
-                Solar power is strictly routed to the DC LED fixture &bull; ESP32 is powered via independent external 5V rail (isolated from solar drain) &bull; Star common ground reference unites ADC conditioning
+                Solar power strictly supplies monitored loads (DC LED Fixture &amp; DC Motor) &bull; ESP32 is powered via independent external 5V rail (isolated from solar drain) &bull; Star common ground reference unites ADC conditioning
               </p>
             </div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <span class="badge-mini-real">☀️ Solar Rail: DC LED</span>
+              <span class="badge-mini-real">☀️ Solar Rail: LED &amp; DC Motor</span>
               <span class="badge-mini-bias" style="background: rgba(59, 130, 246, 0.15); color: #2563eb;">🔌 ESP32: External 5V Isolated</span>
               <span class="badge-mini-bias" style="background: rgba(16, 185, 129, 0.15); color: #059669;">🛡️ Zero-Bias Deadband: Active</span>
             </div>
@@ -511,8 +515,8 @@
             <div class="tester-inputs-grid">
               <label>LED V: <input type="number" id="testVLed" value="1.18" step="0.1"></label>
               <label>LED I (A): <input type="number" id="testCLed" value="0.24" step="0.01"></label>
-              <label>Pump V: <input type="number" id="testVPump" value="1.18" step="0.1"></label>
-              <label>Pump I (A): <input type="number" id="testCPump" value="0.14" step="0.01"></label>
+              <label>Motor V: <input type="number" id="testVPump" value="1.18" step="0.1"></label>
+              <label>Motor I (A): <input type="number" id="testCPump" value="0.14" step="0.01"></label>
             </div>
             <div style="display: flex; gap: 8px; margin-top: 8px;">
               <button class="btn btn-secondary btn-sm" onclick="runCustomPyTorchInference()">Run PyTorch Prediction</button>
@@ -577,7 +581,7 @@
             <div class="tester-inputs-grid">
               <label>Voltage Floor (V): <input type="number" id="cfgVoltFloor" value="2.0" step="0.1"></label>
               <label>LED Noise Floor (A): <input type="number" id="cfgLedFloor" value="0.28" step="0.01"></label>
-              <label>Pump Noise Floor (A): <input type="number" id="cfgPumpFloor" value="0.22" step="0.01"></label>
+              <label>Motor Noise Floor (A): <input type="number" id="cfgPumpFloor" value="0.22" step="0.01"></label>
             </div>
             <button class="btn btn-primary btn-sm" style="margin-top: 8px;" onclick="saveBiasConfig()">Save Deadband Thresholds</button>
           </div>
