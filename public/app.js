@@ -923,6 +923,19 @@ window.addEventListener('DOMContentLoaded', () => {
   setInterval(fetchTelemetry, 2500);
   setInterval(fetchPyTorchLive, 4000);
   setInterval(fetchContinuousLearningStatus, 5000);
+
+  // 10-minute web keep-alive heartbeat (prevents host sleep)
+  setInterval(async () => {
+    try {
+      const res = await fetch('/api/health');
+      if (res.ok) {
+        const data = await res.json();
+        console.log('[Heartbeat ⏰ 10m] Keep-alive ping acknowledged:', data);
+      }
+    } catch (e) {
+      console.warn('Keep-alive ping notice:', e.message);
+    }
+  }, 10 * 60 * 1000);
 });
 
 
@@ -1011,3 +1024,19 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowRight') navSlide(1);
   }
 });
+
+// ========================================================
+// 10. PROJECT KNOWLEDGE BASE & DICTIONARY SEARCH ENGINE
+// ========================================================
+window.filterDictionaryTerms = function(query) {
+  const q = (query || '').toLowerCase().trim();
+  const cards = document.querySelectorAll('#dictionaryGridContainer .dict-card');
+  cards.forEach(card => {
+    const text = (card.getAttribute('data-term') || '') + ' ' + (card.innerText || '').toLowerCase();
+    if (!q || text.includes(q)) {
+      card.style.display = 'flex';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+};

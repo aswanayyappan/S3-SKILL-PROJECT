@@ -554,6 +554,19 @@ async function fetchFirebaseTelemetry() {
 // API ROUTES
 // ==========================================
 
+// Endpoint: Health & Keep-Alive Check (Pings every 10 min to keep service awake)
+app.get(['/api/health', '/api/keepalive'], (req, res) => {
+  res.json({
+    status: 'online',
+    service: 'S-3 IOT Energy & Neural Copilot Server',
+    uptimeSeconds: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+    continuousLearning: 'active_5m_loop',
+    memoryUsageMB: Math.round(process.memoryUsage().rss / 1024 / 1024),
+    firebaseDb: FIREBASE_DB_URL ? 'connected' : 'unconfigured'
+  });
+});
+
 // Endpoint: Live Telemetry
 app.get('/api/telemetry', async (req, res) => {
   const data = await fetchFirebaseTelemetry();
@@ -1213,11 +1226,37 @@ async function dispatchAICompletion(messages, options = {}) {
   throw new Error('All AI models (FreeTheAI GLM-5.3 and Groq) are currently unavailable. Please check API keys or network connectivity.');
 }
 
+// ========================================================
+// 10-MINUTE AUTONOMOUS KEEP-ALIVE & SELF-WAKE ENGINE
+// Automatically pings this web instance every 10 minutes to prevent
+// Render / cloud free tiers from spinning down during inactivity.
+// ========================================================
+const KEEP_ALIVE_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+
+function startSelfKeepAlive() {
+  console.log(`[Keep-Alive ⏰] Self-wake engine initialized. Interval: 10 minutes.`);
+  setInterval(async () => {
+    try {
+      const externalUrl = process.env.RENDER_EXTERNAL_URL || process.env.PUBLIC_URL;
+      const targetUrl = externalUrl ? `${externalUrl}/api/health` : `http://localhost:${PORT}/api/health`;
+      const res = await fetch(targetUrl);
+      if (res.ok) {
+        const body = await res.json();
+        console.log(`[Keep-Alive ⏰ 10m] Web keep-alive OK (${targetUrl}). Uptime: ${body.uptimeSeconds}s, Memory: ${body.memoryUsageMB}MB`);
+      }
+    } catch (err) {
+      console.warn('[Keep-Alive ⏰] Self-ping notice:', err.message);
+    }
+  }, KEEP_ALIVE_INTERVAL_MS);
+}
+
 app.listen(PORT, () => {
   console.log(`===============================================`);
   console.log(`🚀 S-3 IOT Server [TEST BRANCH] running at: http://localhost:${PORT}`);
   console.log(`📡 Connected to Firebase: ${FIREBASE_DB_URL}`);
   console.log(`⚡ Strict DC Power Engine: P = V * I`);
   console.log(`🧠 ML Event Detection & Multi-Appliance Engine Active`);
+  console.log(`⏰ 10-Minute Autonomous Keep-Alive Service Engine Active`);
   console.log(`===============================================`);
+  startSelfKeepAlive();
 });
