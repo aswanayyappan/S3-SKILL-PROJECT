@@ -206,11 +206,11 @@ function updateUI(t) {
 
   if (biasFlowBadge && t.biasRectification) {
     const b = t.biasRectification;
-    if (b.ledIdleClamped && b.motorIdleClamped) {
+    if (b.active && (b.ledIdleClamped || b.motorIdleClamped)) {
       biasFlowBadge.textContent = "Zero-Bias: Clamped (1.18V/0.2A)";
       biasFlowBadge.className = "badge-mini-bias bias-clamped";
     } else {
-      biasFlowBadge.textContent = "Zero-Bias: Active Bench";
+      biasFlowBadge.textContent = "Raw Firebase: Direct";
       biasFlowBadge.className = "badge-mini-bias bias-active";
     }
   }
@@ -1066,3 +1066,23 @@ window.filterDictionaryTerms = function(query) {
     }
   });
 };
+
+
+// Direct Raw Firebase Telemetry (No offset value)
+async function setRawFirebaseDirect() {
+  try {
+    const res = await fetch('/api/calibration', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ voltage_floor: 0, led_current_floor: 0, pump_current_floor: 0, auto_clamp: false })
+    });
+    const json = await res.json();
+    if (json.success) {
+      alert('Direct Raw Firebase Mode Active: Exact raw sensor values shown with zero offset.');
+      fetchTelemetry();
+      fetchPyTorchLive();
+    }
+  } catch (err) {
+    alert('Error setting raw mode: ' + err.message);
+  }
+}

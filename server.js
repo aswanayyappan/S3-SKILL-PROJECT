@@ -190,10 +190,10 @@ function evaluateTelemetryAnomalies(telemetry) {
 // Physical Sensor Zero-Bias Rectification Configuration
 // Clamps off-time phantom voltage (~1.18V - 1.8V) and quiescent current (~0.13A - 0.24A)
 let BIAS_CONFIG = {
-  VOLTAGE_NOISE_FLOOR: 2.0,        // Floating divider voltage <= 2.0V when idle
-  LED_CURRENT_NOISE_FLOOR: 0.28,    // ACS712 zero-point drift <= 0.28A
-  PUMP_CURRENT_NOISE_FLOOR: 0.22,   // ACS712 zero-point drift <= 0.22A
-  ENABLE_AUTO_ZERO_CLAMP: true
+  VOLTAGE_NOISE_FLOOR: 0.0,        // No offset / noise floor
+  LED_CURRENT_NOISE_FLOOR: 0.0,    // No offset
+  PUMP_CURRENT_NOISE_FLOOR: 0.0,   // No offset
+  ENABLE_AUTO_ZERO_CLAMP: false    // Strict Raw Firebase Mode (No offset value, display exact Firebase data)
 };
 
 // In-memory telemetry cache
@@ -385,10 +385,10 @@ async function fetchFirebaseTelemetry() {
     const motorPowerWatts = isMotorIdle ? 0.0 : (motorVoltage * motorCurrent);
     const totalPowerWatts = ledPowerWatts + motorPowerWatts;
 
-    const ledStatus = isLedIdle ? 'OFF' : 'ON';
+    const ledStatus = isLedIdle ? 'OFF' : (ledVoltage > 0.5 && ledCurrent > 0.05 ? 'ON' : 'IDLE');
 
     let motorStatus = 'OFF';
-    if (isMotorIdle || motorCurrent <= 0.05) {
+    if (isMotorIdle || (motorVoltage <= 0.5 && motorCurrent <= 0.05)) {
       motorStatus = 'OFF';
     } else if (motorCurrent > 2.5) {
       motorStatus = 'STALL / OVERLOAD';
@@ -532,9 +532,9 @@ async function fetchFirebaseTelemetry() {
           motorCurrent: rawMotorCurrent
         },
         thresholds: BIAS_CONFIG,
-        explanation: (isLedIdle || isMotorIdle)
-          ? "Off-time floating sensor noise (~1.18V & ~0.2A) suppressed to true 0.00V / 0.000A"
-          : "Active physical bench load running"
+        explanation: BIAS_CONFIG.ENABLE_AUTO_ZERO_CLAMP
+          ? ((isLedIdle || isMotorIdle) ? "Off-time floating sensor noise (~1.18V & ~0.2A) suppressed to true 0.00V / 0.000A" : "Active physical bench load running")
+          : "Raw direct Firebase telemetry stream active (Exact un-offset sensor values shown on web)"
       },
       lastUpdated: new Date().toISOString(),
       source: 'firebase_live'
@@ -845,10 +845,10 @@ app.post('/api/ml/predict', async (req, res) => {
     const telemetry = await fetchFirebaseTelemetry();
     const live = telemetry.live || {};
 
-    const v_led = req.body.v_led !== undefined ? Number(req.body.v_led) : (live.ledVoltage || 1.18);
-    const c_led = req.body.c_led !== undefined ? Number(req.body.c_led) : (live.ledCurrent || 0.24);
-    const v_pump = req.body.v_pump !== undefined ? Number(req.body.v_pump) : (live.waterPumpVoltage || live.motorVoltage || 1.18);
-    const c_pump = req.body.c_pump !== undefined ? Number(req.body.c_pump) : (live.waterPumpCurrent || live.motorCurrent || 0.14);
+    const v_led = req.body.v_led !== undefined ? Number(req.body.v_led) : (live.ledVoltage !== undefined ? live.ledVoltage : 0);
+    const c_led = req.body.c_led !== undefined ? Number(req.body.c_led) : (live.ledCurrent !== undefined ? live.ledCurrent : 0);
+    const v_pump = req.body.v_pump !== undefined ? Number(req.body.v_pump) : (live.waterPumpVoltage ?? live.motorVoltage ?? 0);
+    const c_pump = req.body.c_pump !== undefined ? Number(req.body.c_pump) : (live.waterPumpCurrent ?? live.motorCurrent ?? 0);
 
     const pyScript = path.join(__dirname, 'ml_engine', 'inference.py');
 
